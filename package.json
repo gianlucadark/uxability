@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "build:rust": "cd rust_audit && wasm-pack build --target web && xcopy /E /Y pkg ..\\src\\assets\\rust_audit\\"
   },
   "private": true,
   "dependencies": {
@@ -18,7 +19,17 @@
     "@angular/platform-browser": "~13.2.0",
     "@angular/platform-browser-dynamic": "~13.2.0",
     "@angular/router": "~13.2.0",
+    "@axe-core/webdriverjs": "^4.10.2",
+    "@google/generative-ai": "^0.24.1",
+    "@types/three": "^0.178.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "gpt4all": "^4.0.0",
+    "json2csv": "^6.0.0-alpha.2",
+    "node-fetch": "^3.3.2",
+    "pdfkit": "^0.17.1",
     "rxjs": "~7.5.0",
+    "three": "^0.178.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.11.4"
   },
@@ -28,12 +39,20 @@
     "@angular/compiler-cli": "~13.2.0",
     "@types/jasmine": "~3.10.0",
     "@types/node": "^12.11.1",
+    "axe-core": "^4.10.3",
     "jasmine-core": "~4.0.0",
     "karma": "~6.3.0",
     "karma-chrome-launcher": "~3.1.0",
     "karma-coverage": "~2.1.0",
     "karma-jasmine": "~4.0.0",
     "karma-jasmine-html-reporter": "~1.7.0",
+    "lighthouse": "^12.7.0",
+    "puppeteer": "^24.11.2",
     "typescript": "~4.5.2"
-  }
+  },
+  "description": "This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 13.2.3.",
+  "main": "karma.conf.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://uxability.vercel.app/sitemap.xml
