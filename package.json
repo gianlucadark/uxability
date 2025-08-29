@@ -23,6 +23,7 @@
     "@google/generative-ai": "^0.24.1",
     "@types/three": "^0.178.1",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
     "express": "^4.18.2",
     "gpt4all": "^4.0.0",
     "json2csv": "^6.0.0-alpha.2",

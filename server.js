@@ -8,7 +8,8 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const PDFDocument = require('pdfkit');
 const { Parser } = require('json2csv');
 const stream = require('stream');
-
+require('dotenv').config();
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '20mb' }));
@@ -126,7 +127,7 @@ const highlightStyles = `
   }
 `;
 
-const GEMINI_API_KEY = 'AIzaSyDrp4FtAUzYyMjNc6TMiYuad0kiSPCbEGg';
+
 
 app.post('/scan', async (req, res) => {
   console.log('Ricevuta richiesta di scansione per:', req.body.url);
