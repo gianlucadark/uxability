@@ -5,12 +5,12 @@ import { HttpClientModule } from '@angular/common/http';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { HomeModule } from './home/home.module';
+import { HomeModule } from './module/home.module';
 import { InfoComponent } from './info/info.component';
 import { FooterComponent } from './footer/footer.component';
 
 @NgModule({
-  declarations: [		
+  declarations: [
     AppComponent,
       InfoComponent,
       FooterComponent

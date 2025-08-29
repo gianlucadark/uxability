@@ -323,6 +323,7 @@ app.post('/api/gemini/axe', async (req, res) => {
   const { description } = req.body;
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
   if (!description) {
     return res.status(400).json({ error: 'description mancante.' });
   }

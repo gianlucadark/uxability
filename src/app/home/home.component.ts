@@ -2,7 +2,7 @@ import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl, SafeUrl } from '@angular/platform-browser';
 import { AxeService } from '../service/axe.service';
 import { TranslationService } from '../service/translation.service';
-import { ViolationNode, Violation, ViolationGroup} from './home.models';
+import { ViolationNode, Violation, ViolationGroup} from '../model/home.models';
 import { GeminiService } from '../service/gemini.service';
 import { HttpClient } from '@angular/common/http';
 import { RustScanResult, RustWasmService } from '../service/rust-wasm.service';
@@ -147,50 +147,6 @@ export class HomeComponent implements OnInit {
     this.loading = false;
   }
 
-  private initializeHighlighting() {
-    const iframe = this.siteIframe?.nativeElement;
-    if (!iframe || !iframe.contentDocument) return;
-
-    // Aggiungi lo stile per l'evidenziazione
-    const style = iframe.contentDocument.createElement('style');
-    style.id = this.highlightStyleId;
-    style.textContent = `
-      .violation-highlight {
-        outline: 3px solid #dc2626 !important;
-        background-color: rgba(220, 38, 38, 0.1) !important;
-        transition: all 0.3s ease !important;
-        cursor: pointer !important;
-      }
-      .violation-highlight-critical {
-        outline-color: #dc2626 !important;
-        background-color: rgba(220, 38, 38, 0.1) !important;
-      }
-      .violation-highlight-serious {
-        outline-color: #f59e0b !important;
-        background-color: rgba(245, 158, 11, 0.1) !important;
-      }
-      .violation-highlight-moderate {
-        outline-color: #3498db !important;
-        background-color: rgba(52, 152, 219, 0.1) !important;
-      }
-      .violation-highlight-minor {
-        outline-color: #64748b !important;
-        background-color: rgba(100, 116, 139, 0.1) !important;
-      }
-      .violation-highlight::before {
-        content: "⚠️";
-        position: absolute;
-        top: -20px;
-        left: 0;
-        background: #fff;
-        padding: 2px 6px;
-        border-radius: 4px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        z-index: 9999;
-      }
-    `;
-    iframe.contentDocument.head.appendChild(style);
-  }
 
   highlightElement(selector: string, impact: string) {
     const iframe = this.siteIframe?.nativeElement;
