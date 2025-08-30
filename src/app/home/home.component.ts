@@ -2,10 +2,12 @@ import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl, SafeUrl } from '@angular/platform-browser';
 import { AxeService } from '../service/axe.service';
 import { TranslationService } from '../service/translation.service';
-import { ViolationNode, Violation, ViolationGroup} from '../model/home.models';
+import { Violation, ViolationGroup} from '../model/home.models';
 import { GeminiService } from '../service/gemini.service';
 import { HttpClient } from '@angular/common/http';
 import { RustScanResult, RustWasmService } from '../service/rust-wasm.service';
+import { environment } from 'src/environments/environment';
+import { API_ENDPOINTS } from 'src/endpoints/endopoints';
 
 @Component({
   selector: 'app-home',
@@ -60,6 +62,7 @@ export class HomeComponent implements OnInit {
   rustResult: RustScanResult | null = null;
   rustScanTime: number | null = null;
   scanMode: 'light' | 'deep' = 'light';
+  private baseUrl = environment.apiUrl;
 
   constructor(
     private axeService: AxeService,
@@ -91,7 +94,7 @@ export class HomeComponent implements OnInit {
     try {
       // --- Analisi Rust: scarica HTML e verifica <title> ---
       const html = await this.http
-        .post('http://localhost:3001/proxy-html', { url: this.url }, { responseType: 'text' })
+        .post(API_ENDPOINTS.proxyHtml, { url: this.url }, { responseType: 'text' })
         .toPromise();
 
       const rustStart = performance.now();
@@ -816,7 +819,7 @@ export class HomeComponent implements OnInit {
 
   downloadPdfReport() {
     if (!this.scanResults) return;
-    this.http.post('http://localhost:3001/download-report/pdf', { results: this.scanResults }, { responseType: 'blob' })
+    this.http.post(API_ENDPOINTS.reportPdf, { results: this.scanResults }, { responseType: 'blob' })
       .subscribe(blob => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -829,7 +832,7 @@ export class HomeComponent implements OnInit {
 
   downloadCsvReport() {
     if (!this.scanResults) return;
-    this.http.post('http://localhost:3001/download-report/csv', { results: this.scanResults }, { responseType: 'blob' })
+    this.http.post(API_ENDPOINTS.reportCsv, { results: this.scanResults }, { responseType: 'blob' })
       .subscribe(blob => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');

@@ -3,7 +3,6 @@ const lighthouse = require('lighthouse');
 const { writeFileSync } = require('fs');
 const axeCore = require('axe-core');
 
-const URL = 'http://localhost:4200';
 
 (async () => {
   // Avvia Puppeteer
