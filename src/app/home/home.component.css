@@ -646,9 +646,6 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
-  .preview-column {
-    display: none;
-  }
 }
 
 .preview-error {
