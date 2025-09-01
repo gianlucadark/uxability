@@ -92,18 +92,21 @@ export class HomeComponent implements OnInit {
     this.rustScanTime = null;
 
     try {
-      // --- Analisi Rust: scarica HTML e verifica <title> ---
-      const html = await this.http
-        .post(API_ENDPOINTS.proxyHtml, { url: this.url }, { responseType: 'text' })
-        .toPromise();
 
-      const rustStart = performance.now();
-      const scanResult = await this.rustWasm.scanHtml(html || '');
-      const rustEnd = performance.now();
+      if (this.scanMode === 'light') {
+         // --- Analisi Rust: scarica HTML e verifica <title> ---
+        const html = await this.http
+          .post(API_ENDPOINTS.proxyHtml, { url: this.url }, { responseType: 'text' })
+          .toPromise();
+        const rustStart = performance.now();
+        const scanResult = await this.rustWasm.scanHtml(html || '');
+        const rustEnd = performance.now();
 
-      this.rustResult = scanResult;
-      this.rustScanTime = ((rustEnd - rustStart) / 1000);
-      // --- Fine analisi Rust ---
+        this.rustResult = scanResult;
+        this.rustScanTime = ((rustEnd - rustStart) / 1000);
+        // --- Fine analisi Rust ---
+      }
+
 
       if (this.scanMode === 'deep') {
         const results = await this.axeService.scanUrl(this.url);

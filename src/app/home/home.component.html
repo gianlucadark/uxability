@@ -35,409 +35,429 @@
 
   <!-- RISULTATO RUST (solo se scanMode === 'light') -->
 
-  <div class="results-layout-rust" *ngIf="rustResult">
-  <div class="results-column-rust">
-      <div class="glass-bg"></div>
-      <div *ngIf="scanMode === 'light' && rustResult !== null && !loading" class="rust-result-card flat rust-metrics-grid">
-        <div class="rust-title"><i class="fab fa-rust"></i> Analisi Rust (WASM)</div>
-        <div class="rust-metric" matTooltip="Presenza del tag <title> nella pagina"><i class="fas fa-heading icon-title"></i>
-          <span class="metric-label">Titolo
-            <span class="info-icon" tabindex="0">
-              <i class="fas fa-info-circle"></i>
-              <span class="info-tooltip">Controlla se la pagina ha un titolo, importante per SEO e accessibilità.</span>
-            </span>
-          </span>
-          <span class="metric-value" [class.ok]="rustResult.has_title" [class.ko]="!rustResult.has_title">
-            {{ rustResult.has_title ? 'Presente' : 'Assente' }}
-          </span>
-        </div>
-        <div class="rust-metric" matTooltip="Presenza del meta description per la SEO"><i class="fas fa-align-left icon-meta"></i>
-          <span class="metric-label">Meta Description
-            <span class="info-icon" tabindex="0">
-              <i class="fas fa-info-circle"></i>
-              <span class="info-tooltip">Verifica la presenza della meta description, utile per i motori di ricerca.</span>
-            </span>
-          </span>
-          <span class="metric-value" [class.ok]="rustResult.has_meta_description" [class.ko]="!rustResult.has_meta_description">
-            {{ rustResult.has_meta_description ? 'Presente' : 'Assente' }}
-          </span>
-        </div>
-        <div class="rust-metric" matTooltip="Lingua dichiarata nell'HTML"><i class="fas fa-language icon-lang"></i>
-          <span class="metric-label">Lang
-            <span class="info-icon" tabindex="0">
-              <i class="fas fa-info-circle"></i>
-              <span class="info-tooltip">Controlla se la lingua della pagina è dichiarata nell'HTML.</span>
-            </span>
-          </span>
-          <span class="metric-value" [class.ok]="rustResult.has_lang" [class.ko]="!rustResult.has_lang">
-            {{ rustResult.has_lang ? 'Presente' : 'Assente' }}
-          </span>
-        </div>
-        <div class="rust-metric" matTooltip="Numero di tag <h1> presenti"><i class="fas fa-heading icon-h1"></i>
-          <span class="metric-label">H1
-            <span class="info-icon" tabindex="0">
-              <i class="fas fa-info-circle"></i>
-              <span class="info-tooltip">Conta i titoli principali (&lt;h1&gt;) presenti nella pagina.</span>
-            </span>
-          </span>
-          <span class="metric-value">{{ rustResult.h1_count }}</span>
-        </div>
-        <div class="rust-metric" matTooltip="Immagini senza attributo alt"><i class="fas fa-image icon-img"></i>
-          <span class="metric-label">Img senza alt
-            <span class="info-icon" tabindex="0">
-              <i class="fas fa-info-circle"></i>
-              <span class="info-tooltip">Numero di immagini senza testo alternativo (alt), importante per l’accessibilità.</span>
-            </span>
-          </span>
-          <span class="metric-value" [class.ko]="rustResult.img_missing_alt > 0" [class.ok]="rustResult.img_missing_alt === 0">
-            {{ rustResult.img_missing_alt }}
-          </span>
-        </div>
-        <div class="rust-metric" matTooltip="Immagini senza loading=lazy"><i class="fas fa-clock icon-lazy"></i>
-          <span class="metric-label">Img no lazy
-            <span class="info-icon" tabindex="0">
-              <i class="fas fa-info-circle"></i>
-              <span class="info-tooltip">Immagini che non usano il caricamento "lazy", utile per le performance.</span>
-            </span>
-          </span>
-          <span class="metric-value" [class.ko]="rustResult.images_without_lazy > 0" [class.ok]="rustResult.images_without_lazy === 0">
-            {{ rustResult.images_without_lazy }}
-          </span>
-        </div>
-        <div class="rust-metric" matTooltip="Link con testo debole (es. 'clicca qui')"><i class="fas fa-link icon-link"></i>
-          <span class="metric-label">Link deboli
-            <span class="info-icon" tabindex="0">
-              <i class="fas fa-info-circle"></i>
-              <span class="info-tooltip">Conta i link con testo poco descrittivo (es. "clicca qui").</span>
-            </span>
-          </span>
-          <span class="metric-value" [class.ko]="rustResult.weak_links > 0" [class.ok]="rustResult.weak_links === 0">
-            {{ rustResult.weak_links }}
-          </span>
-        </div>
-        <div class="rust-metric" matTooltip="Input senza label o aria-label"><i class="fas fa-keyboard icon-input"></i>
-          <span class="metric-label">Input no label
-            <span class="info-icon" tabindex="0">
-              <i class="fas fa-info-circle"></i>
-              <span class="info-tooltip">Campi input senza etichetta visibile o aria-label.</span>
-            </span>
-          </span>
-          <span class="metric-value" [class.ko]="rustResult.inputs_without_label > 0" [class.ok]="rustResult.inputs_without_label === 0">
-            {{ rustResult.inputs_without_label }}
-          </span>
-        </div>
-        <div class="rust-metric" matTooltip="Presenza di landmark main/nav"><i class="fas fa-map-signs icon-main"></i>
-          <span class="metric-label">Landmark
-            <span class="info-icon" tabindex="0">
-              <i class="fas fa-info-circle"></i>
-              <span class="info-tooltip">Verifica la presenza di landmark semantici (&lt;main&gt; o &lt;nav&gt;).</span>
-            </span>
-          </span>
-          <span class="metric-value" [class.ok]="rustResult.has_main_or_nav" [class.ko]="!rustResult.has_main_or_nav">
-            {{ rustResult.has_main_or_nav ? 'Presente' : 'Assente' }}
-          </span>
-        </div>
-        <div class="rust-metric" matTooltip="Duplicati di title/meta description"><i class="fas fa-copy icon-dup"></i>
-          <span class="metric-label">Duplicati
-            <span class="info-icon" tabindex="0">
-              <i class="fas fa-info-circle"></i>
-              <span class="info-tooltip">Segnala se ci sono titoli o meta description duplicati.</span>
-            </span>
-          </span>
-          <span class="metric-value" [class.ko]="rustResult.has_duplicate_title" [class.ok]="!rustResult.has_duplicate_title">
-            {{ rustResult.has_duplicate_title ? 'Presenti' : 'Nessuno' }}
-          </span>
-        </div>
+<div class="results-layout-rust" *ngIf="loading || rustResult || scanResults">
 
-        <div class="rust-metric" matTooltip="Elementi con contrasto colore insufficiente (solo inline style)"><i class="fas fa-adjust icon-contrast"></i>
-          <span class="metric-label">Contrasto basso
-            <span class="info-icon" tabindex="0">
-              <i class="fas fa-info-circle"></i>
-              <span class="info-tooltip">Elementi con contrasto colore testo/sfondo insufficiente (solo inline style).</span>
-            </span>
-          </span>
-          <span class="metric-value" [class.ko]="rustResult.low_contrast_count > 0" [class.ok]="rustResult.low_contrast_count === 0">
-            {{ rustResult.low_contrast_count }}
-          </span>
-        </div>
-        <div class="rust-metric" matTooltip="Campi form non accessibili (input, textarea, select senza label/aria-label)"><i class="fas fa-universal-access icon-form"></i>
-          <span class="metric-label">Form non accessibili
-            <span class="info-icon" tabindex="0">
-              <i class="fas fa-info-circle"></i>
-              <span class="info-tooltip">Campi form (input, textarea, select) senza etichetta o aria-label.</span>
-            </span>
-          </span>
-          <span class="metric-value" [class.ko]="rustResult.inaccessible_form_fields > 0" [class.ok]="rustResult.inaccessible_form_fields === 0">
-            {{ rustResult.inaccessible_form_fields }}
-          </span>
-        </div>
-        <div class="rust-metric" matTooltip="Presenza del meta viewport per mobile"><i class="fas fa-mobile-alt icon-viewport"></i>
-          <span class="metric-label">Viewport
-            <span class="info-icon" tabindex="0">
-              <i class="fas fa-info-circle"></i>
-              <span class="info-tooltip">Controlla se è presente il meta viewport per la responsività su mobile.</span>
-            </span>
-          </span>
-          <span class="metric-value" [class.ok]="rustResult.has_viewport" [class.ko]="!rustResult.has_viewport">
-            {{ rustResult.has_viewport ? 'Presente' : 'Assente' }}
-          </span>
-        </div>
-        <div class="rust-metric" matTooltip="Presenza del tag canonical per la SEO"><i class="fas fa-link icon-canonical"></i>
-          <span class="metric-label">Canonical
-            <span class="info-icon" tabindex="0">
-              <i class="fas fa-info-circle"></i>
-              <span class="info-tooltip">Verifica la presenza del tag canonical per evitare contenuti duplicati.</span>
-            </span>
-          </span>
-          <span class="metric-value" [class.ok]="rustResult.has_canonical" [class.ko]="!rustResult.has_canonical">
-            {{ rustResult.has_canonical ? 'Presente' : 'Assente' }}
-          </span>
-        </div>
-        <div class="rust-metric" matTooltip="Script bloccanti nel <head> (senza async/defer)"><i class="fas fa-ban icon-blocking"></i>
-          <span class="metric-label">Script bloccanti
-            <span class="info-icon" tabindex="0">
-              <i class="fas fa-info-circle"></i>
-              <span class="info-tooltip">Script nel &lt;head&gt; che rallentano il caricamento (senza async/defer).</span>
-            </span>
-          </span>
-          <span class="metric-value" [class.ko]="rustResult.blocking_scripts > 0" [class.ok]="rustResult.blocking_scripts === 0">
-            {{ rustResult.blocking_scripts }}
-          </span>
-        </div>
-        <div class="rust-metric" matTooltip="Immagini pesanti (width/height > 1000px dichiarati)"><i class="fas fa-image icon-heavy"></i>
-          <span class="metric-label">Img pesanti
-            <span class="info-icon" tabindex="0">
-              <i class="fas fa-info-circle"></i>
-              <span class="info-tooltip">Immagini con dimensioni dichiarate molto grandi (&gt;1000px).</span>
-            </span>
-          </span>
-          <span class="metric-value" [class.ko]="rustResult.heavy_images > 0" [class.ok]="rustResult.heavy_images === 0">
-            {{ rustResult.heavy_images }}
-          </span>
-        </div>
-        <div class="rust-metric" *ngIf="rustScanTime !== null">
-          <i class="fas fa-stopwatch"></i>
-          <span class="metric-label">
-            Tempo analisi
-            <span class="info-icon" tabindex="0">
-              <i class="fas fa-info-circle"></i>
-              <span class="info-tooltip">Tempo impiegato per l’analisi Rust.</span>
-            </span>
-          </span>
-          <br>
-          <span class="metric-value">{{ rustScanTime | number:'1.3-3' }}s</span>
-        </div>
+  <!-- Colonna Rust - Solo per scanMode light -->
+  <div class="results-column-rust" *ngIf="scanMode === 'light'">
+    <div class="glass-bg"></div>
 
-    </div>
-
-  <!-- Layout delle colonne visibile solo dopo click su Scansiona -->
-  <div class="results-layout" *ngIf="loading || scanResults">
-    <div class="results-column">
-      <div class="glass-bg"></div>
-      <ng-container *ngIf="loading || !scanResults; else risultatiReali">
-        <div class="skeleton-header"></div>
+    <!-- Skeleton loading per Rust -->
+    <div *ngIf="loading && scanMode === 'light'" class="rust-result-card flat rust-metrics-grid">
+      <ng-container *ngIf="loading">
+        <div class="skeleton-header" style="height: 40px; margin-bottom: 1.5rem;"></div>
         <div class="skeleton-card" *ngFor="let i of [1,2,3,4]"></div>
       </ng-container>
-      <ng-template #risultatiReali>
-        <div *ngIf="scanResults && !loading">
-          <div class="download-buttons" style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
-            <button (click)="downloadPdfReport()" class="download-btn"><i class="fas fa-file-pdf"></i> Scarica PDF</button>
-            <button (click)="downloadCsvReport()" class="download-btn"><i class="fas fa-file-csv"></i> Scarica CSV</button>
-          </div>
-          <div class="lighthouse-title centered-title"><i class="fas fa-chart-line"></i><span>ANALISI PERFORMANCE & ACCESSIBILITÀ</span></div>
-          <!-- RISULTATI LIGHTHOUSE -->
-          <div *ngIf="lighthouseResults && !lighthouseResults.error" class="lighthouse-container flat">
-            <div class="lighthouse-grid">
-              <button class="lh-grid-item" (click)="openLighthouseModal('performance')">
-                <div class="lh-grid-label">Performance</div>
-                <div class="lh-grid-score">{{ getDisplayScore('performance') }}/100</div>
-                <i class="fas" [ngClass]="getCategoryIcon('performance')"></i>
-              </button>
-              <button class="lh-grid-item" (click)="openLighthouseModal('accessibility')">
-                <div class="lh-grid-label">Accessibilità</div>
-                <div class="lh-grid-score">{{ getDisplayScore('accessibility') }}/100</div>
-                <i class="fas" [ngClass]="getCategoryIcon('accessibility')"></i>
-              </button>
-              <button class="lh-grid-item" (click)="openLighthouseModal('best-practices')">
-                <div class="lh-grid-label">Best Practices</div>
-                <div class="lh-grid-score">{{ getDisplayScore('best-practices') }}/100</div>
-                <i class="fas" [ngClass]="getCategoryIcon('best-practices')"></i>
-              </button>
-              <button class="lh-grid-item" (click)="openLighthouseModal('seo')">
-                <div class="lh-grid-label">SEO</div>
-                <div class="lh-grid-score">{{ getDisplayScore('seo') }}/100</div>
-                <i class="fas" [ngClass]="getCategoryIcon('seo')"></i>
-              </button>
-            </div>
-          </div>
+    </div>
 
-          <!-- RISULTATI AXE/VIOLAZIONI -->
-          <div *ngIf="scanResults && !scanResults.error" class="violations-container">
-            <div class="axe-title">Risultati della scansione</div>
-            <div class="results-summary" *ngIf="scanResults.violations">
-              <span class="summary-item" [class.has-issues]="scanResults.violations.length > 0">
-                <i class="fas fa-exclamation-circle"></i>
-                {{ scanResults.violations.length }} Violazioni
-              </span>
-              <span class="summary-item" *ngIf="scanResults.passes">
-                <i class="fas fa-check-circle"></i>
-                {{ getPassesCount() }} Test superati
-              </span>
-              <span class="summary-item" *ngIf="scanResults.incomplete">
-                <i class="fas fa-question-circle"></i>
-                {{ getIncompleteCount() }} Test incompleti
-              </span>
-            </div>
-            <div *ngIf="violationGroups.length > 0; else nessunaViolazione" class="groups-scrollable">
-              <div *ngFor="let group of violationGroups" class="violation-card flat" [ngClass]="group.impact">
-                <div class="card-header flat" (click)="toggleGroup(group)">
-                  <div class="group-title">
-                    <i class="fas" [class]="getImpactIcon(group.impact)"></i>
-                    <span class="impact-label">{{ group.translatedImpact }}</span>
-                    <span class="violation-count">{{ group.violations.length }}</span>
-                  </div>
-                  <i class="fas" [class.fa-chevron-down]="!group.isExpanded" [class.fa-chevron-up]="group.isExpanded"></i>
+    <!-- Risultati Rust reali -->
+    <div *ngIf="!loading && rustResult !== null && scanMode === 'light'" class="rust-result-card flat rust-metrics-grid">
+      <div class="rust-title"><i class="fab fa-rust"></i> Analisi Rust (WASM)</div>
+      <div class="rust-metric" matTooltip="Presenza del tag <title> nella pagina"><i class="fas fa-heading icon-title"></i>
+        <span class="metric-label">Titolo
+          <span class="info-icon" tabindex="0">
+            <i class="fas fa-info-circle"></i>
+            <span class="info-tooltip">Controlla se la pagina ha un titolo, importante per SEO e accessibilità.</span>
+          </span>
+        </span>
+        <span class="metric-value" [class.ok]="rustResult.has_title" [class.ko]="!rustResult.has_title">
+          {{ rustResult.has_title ? 'Presente' : 'Assente' }}
+        </span>
+      </div>
+      <div class="rust-metric" matTooltip="Presenza del meta description per la SEO"><i class="fas fa-align-left icon-meta"></i>
+        <span class="metric-label">Meta Description
+          <span class="info-icon" tabindex="0">
+            <i class="fas fa-info-circle"></i>
+            <span class="info-tooltip">Verifica la presenza della meta description, utile per i motori di ricerca.</span>
+          </span>
+        </span>
+        <span class="metric-value" [class.ok]="rustResult.has_meta_description" [class.ko]="!rustResult.has_meta_description">
+          {{ rustResult.has_meta_description ? 'Presente' : 'Assente' }}
+        </span>
+      </div>
+      <div class="rust-metric" matTooltip="Lingua dichiarata nell'HTML"><i class="fas fa-language icon-lang"></i>
+        <span class="metric-label">Lang
+          <span class="info-icon" tabindex="0">
+            <i class="fas fa-info-circle"></i>
+            <span class="info-tooltip">Controlla se la lingua della pagina è dichiarata nell'HTML.</span>
+          </span>
+        </span>
+        <span class="metric-value" [class.ok]="rustResult.has_lang" [class.ko]="!rustResult.has_lang">
+          {{ rustResult.has_lang ? 'Presente' : 'Assente' }}
+        </span>
+      </div>
+      <div class="rust-metric" matTooltip="Numero di tag <h1> presenti"><i class="fas fa-heading icon-h1"></i>
+        <span class="metric-label">H1
+          <span class="info-icon" tabindex="0">
+            <i class="fas fa-info-circle"></i>
+            <span class="info-tooltip">Conta i titoli principali (&lt;h1&gt;) presenti nella pagina.</span>
+          </span>
+        </span>
+        <span class="metric-value">{{ rustResult.h1_count }}</span>
+      </div>
+      <div class="rust-metric" matTooltip="Immagini senza attributo alt"><i class="fas fa-image icon-img"></i>
+        <span class="metric-label">Img senza alt
+          <span class="info-icon" tabindex="0">
+            <i class="fas fa-info-circle"></i>
+            <span class="info-tooltip">Numero di immagini senza testo alternativo (alt), importante per l'accessibilità.</span>
+          </span>
+        </span>
+        <span class="metric-value" [class.ko]="rustResult.img_missing_alt > 0" [class.ok]="rustResult.img_missing_alt === 0">
+          {{ rustResult.img_missing_alt }}
+        </span>
+      </div>
+      <div class="rust-metric" matTooltip="Immagini senza loading=lazy"><i class="fas fa-clock icon-lazy"></i>
+        <span class="metric-label">Img no lazy
+          <span class="info-icon" tabindex="0">
+            <i class="fas fa-info-circle"></i>
+            <span class="info-tooltip">Immagini che non usano il caricamento "lazy", utile per le performance.</span>
+          </span>
+        </span>
+        <span class="metric-value" [class.ko]="rustResult.images_without_lazy > 0" [class.ok]="rustResult.images_without_lazy === 0">
+          {{ rustResult.images_without_lazy }}
+        </span>
+      </div>
+      <div class="rust-metric" matTooltip="Link con testo debole (es. 'clicca qui')"><i class="fas fa-link icon-link"></i>
+        <span class="metric-label">Link deboli
+          <span class="info-icon" tabindex="0">
+            <i class="fas fa-info-circle"></i>
+            <span class="info-tooltip">Conta i link con testo poco descrittivo (es. "clicca qui").</span>
+          </span>
+        </span>
+        <span class="metric-value" [class.ko]="rustResult.weak_links > 0" [class.ok]="rustResult.weak_links === 0">
+          {{ rustResult.weak_links }}
+        </span>
+      </div>
+      <div class="rust-metric" matTooltip="Input senza label o aria-label"><i class="fas fa-keyboard icon-input"></i>
+        <span class="metric-label">Input no label
+          <span class="info-icon" tabindex="0">
+            <i class="fas fa-info-circle"></i>
+            <span class="info-tooltip">Campi input senza etichetta visibile o aria-label.</span>
+          </span>
+        </span>
+        <span class="metric-value" [class.ko]="rustResult.inputs_without_label > 0" [class.ok]="rustResult.inputs_without_label === 0">
+          {{ rustResult.inputs_without_label }}
+        </span>
+      </div>
+      <div class="rust-metric" matTooltip="Presenza di landmark main/nav"><i class="fas fa-map-signs icon-main"></i>
+        <span class="metric-label">Landmark
+          <span class="info-icon" tabindex="0">
+            <i class="fas fa-info-circle"></i>
+            <span class="info-tooltip">Verifica la presenza di landmark semantici (&lt;main&gt; o &lt;nav&gt;).</span>
+          </span>
+        </span>
+        <span class="metric-value" [class.ok]="rustResult.has_main_or_nav" [class.ko]="!rustResult.has_main_or_nav">
+          {{ rustResult.has_main_or_nav ? 'Presente' : 'Assente' }}
+        </span>
+      </div>
+      <div class="rust-metric" matTooltip="Duplicati di title/meta description"><i class="fas fa-copy icon-dup"></i>
+        <span class="metric-label">Duplicati
+          <span class="info-icon" tabindex="0">
+            <i class="fas fa-info-circle"></i>
+            <span class="info-tooltip">Segnala se ci sono titoli o meta description duplicati.</span>
+          </span>
+        </span>
+        <span class="metric-value" [class.ko]="rustResult.has_duplicate_title" [class.ok]="!rustResult.has_duplicate_title">
+          {{ rustResult.has_duplicate_title ? 'Presenti' : 'Nessuno' }}
+        </span>
+      </div>
+      <div class="rust-metric" matTooltip="Elementi con contrasto colore insufficiente (solo inline style)"><i class="fas fa-adjust icon-contrast"></i>
+        <span class="metric-label">Contrasto basso
+          <span class="info-icon" tabindex="0">
+            <i class="fas fa-info-circle"></i>
+            <span class="info-tooltip">Elementi con contrasto colore testo/sfondo insufficiente (solo inline style).</span>
+          </span>
+        </span>
+        <span class="metric-value" [class.ko]="rustResult.low_contrast_count > 0" [class.ok]="rustResult.low_contrast_count === 0">
+          {{ rustResult.low_contrast_count }}
+        </span>
+      </div>
+      <div class="rust-metric" matTooltip="Campi form non accessibili (input, textarea, select senza label/aria-label)"><i class="fas fa-universal-access icon-form"></i>
+        <span class="metric-label">Form non accessibili
+          <span class="info-icon" tabindex="0">
+            <i class="fas fa-info-circle"></i>
+            <span class="info-tooltip">Campi form (input, textarea, select) senza etichetta o aria-label.</span>
+          </span>
+        </span>
+        <span class="metric-value" [class.ko]="rustResult.inaccessible_form_fields > 0" [class.ok]="rustResult.inaccessible_form_fields === 0">
+          {{ rustResult.inaccessible_form_fields }}
+        </span>
+      </div>
+      <div class="rust-metric" matTooltip="Presenza del meta viewport per mobile"><i class="fas fa-mobile-alt icon-viewport"></i>
+        <span class="metric-label">Viewport
+          <span class="info-icon" tabindex="0">
+            <i class="fas fa-info-circle"></i>
+            <span class="info-tooltip">Controlla se è presente il meta viewport per la responsività su mobile.</span>
+          </span>
+        </span>
+        <span class="metric-value" [class.ok]="rustResult.has_viewport" [class.ko]="!rustResult.has_viewport">
+          {{ rustResult.has_viewport ? 'Presente' : 'Assente' }}
+        </span>
+      </div>
+      <div class="rust-metric" matTooltip="Presenza del tag canonical per la SEO"><i class="fas fa-link icon-canonical"></i>
+        <span class="metric-label">Canonical
+          <span class="info-icon" tabindex="0">
+            <i class="fas fa-info-circle"></i>
+            <span class="info-tooltip">Verifica la presenza del tag canonical per evitare contenuti duplicati.</span>
+          </span>
+        </span>
+        <span class="metric-value" [class.ok]="rustResult.has_canonical" [class.ko]="!rustResult.has_canonical">
+          {{ rustResult.has_canonical ? 'Presente' : 'Assente' }}
+        </span>
+      </div>
+      <div class="rust-metric" matTooltip="Script bloccanti nel <head> (senza async/defer)"><i class="fas fa-ban icon-blocking"></i>
+        <span class="metric-label">Script bloccanti
+          <span class="info-icon" tabindex="0">
+            <i class="fas fa-info-circle"></i>
+            <span class="info-tooltip">Script nel &lt;head&gt; che rallentano il caricamento (senza async/defer).</span>
+          </span>
+        </span>
+        <span class="metric-value" [class.ko]="rustResult.blocking_scripts > 0" [class.ok]="rustResult.blocking_scripts === 0">
+          {{ rustResult.blocking_scripts }}
+        </span>
+      </div>
+      <div class="rust-metric" matTooltip="Immagini pesanti (width/height > 1000px dichiarati)"><i class="fas fa-image icon-heavy"></i>
+        <span class="metric-label">Img pesanti
+          <span class="info-icon" tabindex="0">
+            <i class="fas fa-info-circle"></i>
+            <span class="info-tooltip">Immagini con dimensioni dichiarate molto grandi (&gt;1000px).</span>
+          </span>
+        </span>
+        <span class="metric-value" [class.ko]="rustResult.heavy_images > 0" [class.ok]="rustResult.heavy_images === 0">
+          {{ rustResult.heavy_images }}
+        </span>
+      </div>
+      <div class="rust-metric" *ngIf="rustScanTime !== null">
+        <i class="fas fa-stopwatch"></i>
+        <span class="metric-label">
+          Tempo analisi
+          <span class="info-icon" tabindex="0">
+            <i class="fas fa-info-circle"></i>
+            <span class="info-tooltip">Tempo impiegato per l'analisi Rust.</span>
+          </span>
+        </span>
+        <br>
+        <span class="metric-value">{{ rustScanTime | number:'1.3-3' }}s</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Layout principale dei risultati -->
+  <div class="results-layout" *ngIf="loading || scanResults">
+
+    <!-- Colonna dei risultati -->
+    <div class="results-column">
+      <div class="glass-bg"></div>
+
+      <!-- Skeleton loading per la colonna risultati -->
+      <ng-container *ngIf="loading">
+        <div class="skeleton-header" style="height: 40px; margin-bottom: 1.5rem;"></div>
+        <div class="skeleton-card" *ngFor="let i of [1,2,3,4]"></div>
+      </ng-container>
+
+      <!-- Risultati reali -->
+      <ng-container *ngIf="!loading && scanResults">
+      <div class="glass-bg"></div>
+        <div class="download-buttons" style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
+          <button (click)="downloadPdfReport()" class="download-btn"><i class="fas fa-file-pdf"></i> Scarica PDF</button>
+          <button (click)="downloadCsvReport()" class="download-btn"><i class="fas fa-file-csv"></i> Scarica CSV</button>
+        </div>
+        <div class="lighthouse-title centered-title"><i class="fas fa-chart-line"></i><span>ANALISI PERFORMANCE & ACCESSIBILITÀ</span></div>
+
+        <!-- RISULTATI LIGHTHOUSE -->
+        <div *ngIf="lighthouseResults && !lighthouseResults.error" class="lighthouse-container flat">
+          <div class="lighthouse-grid">
+            <button class="lh-grid-item" (click)="openLighthouseModal('performance')">
+              <div class="lh-grid-label">Performance</div>
+              <div class="lh-grid-score">{{ getDisplayScore('performance') }}/100</div>
+              <i class="fas" [ngClass]="getCategoryIcon('performance')"></i>
+            </button>
+            <button class="lh-grid-item" (click)="openLighthouseModal('accessibility')">
+              <div class="lh-grid-label">Accessibilità</div>
+              <div class="lh-grid-score">{{ getDisplayScore('accessibility') }}/100</div>
+              <i class="fas" [ngClass]="getCategoryIcon('accessibility')"></i>
+            </button>
+            <button class="lh-grid-item" (click)="openLighthouseModal('best-practices')">
+              <div class="lh-grid-label">Best Practices</div>
+              <div class="lh-grid-score">{{ getDisplayScore('best-practices') }}/100</div>
+              <i class="fas" [ngClass]="getCategoryIcon('best-practices')"></i>
+            </button>
+            <button class="lh-grid-item" (click)="openLighthouseModal('seo')">
+              <div class="lh-grid-label">SEO</div>
+              <div class="lh-grid-score">{{ getDisplayScore('seo') }}/100</div>
+              <i class="fas" [ngClass]="getCategoryIcon('seo')"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- RISULTATI AXE/VIOLAZIONI -->
+        <div *ngIf="scanResults && !scanResults.error" class="violations-container">
+          <div class="axe-title">Risultati della scansione</div>
+          <div class="results-summary" *ngIf="scanResults.violations">
+            <span class="summary-item" [class.has-issues]="scanResults.violations.length > 0">
+              <i class="fas fa-exclamation-circle"></i>
+              {{ scanResults.violations.length }} Violazioni
+            </span>
+            <span class="summary-item" *ngIf="scanResults.passes">
+              <i class="fas fa-check-circle"></i>
+              {{ getPassesCount() }} Test superati
+            </span>
+            <span class="summary-item" *ngIf="scanResults.incomplete">
+              <i class="fas fa-question-circle"></i>
+              {{ getIncompleteCount() }} Test incompleti
+            </span>
+          </div>
+          <div *ngIf="violationGroups.length > 0; else nessunaViolazione" class="groups-scrollable">
+            <div *ngFor="let group of violationGroups" class="violation-card flat" [ngClass]="group.impact">
+              <div class="card-header flat" (click)="toggleGroup(group)">
+                <div class="group-title">
+                  <i class="fas" [class]="getImpactIcon(group.impact)"></i>
+                  <span class="impact-label">{{ group.translatedImpact }}</span>
+                  <span class="violation-count">{{ group.violations.length }}</span>
                 </div>
-                <div class="card-content" [class.expanded]="group.isExpanded">
-                  <div class="violation-list">
-                    <div *ngFor="let v of group.violations; let idx = index" class="violation-item" [class.with-divider]="idx !== 0">
-                      <div class="violation-header">
-                        <span class="violation-icon">⚠️</span>
-                        <span class="violation-title">{{ v.translatedDescription }}</span>
-                      </div>
-                      <div class="violation-info">
-                        <div *ngIf="v.nodes[0]?.target" class="info-row">
-                          <span class="info-label">Elemento:</span>
-                          <code class="info-value">{{ formatElementPath(v.nodes[0].target[0]) }}</code>
-                        </div>
-                        <div class="info-row">
-                          <span class="info-label">Soluzione:</span>
-                          <span class="info-value">{{ v.translatedSolution }}</span>
-                        </div>
-                        <div class="info-row ai-explanation">
-                          <button
-                            (click)="getAxeAIExplanation(v)"
-                            [disabled]="v.aiExplanation && v.aiExplanation !== 'Caricamento spiegazione...'"
-                            *ngIf="!v.aiExplanation || v.aiExplanation === 'Caricamento spiegazione...'">
-                            Mostra spiegazione AI
-                          </button>
-                          <span *ngIf="v.aiExplanation && v.aiExplanation !== 'Caricamento spiegazione...'">
-                            <strong>Spiegazione AI:</strong> {{ v.aiExplanation }}
-                          </span>
-                          <span *ngIf="v.aiExplanation === 'Caricamento spiegazione...'">Caricamento spiegazione...</span>
-                        </div>
-                        <img *ngIf="v.nodes[0]?.screenshot"
-                             [src]="'data:image/png;base64,' + v.nodes[0].screenshot"
-                             class="violation-thumb"
-                             alt="Miniatura sezione errore">
-                      </div>
+                <i class="fas" [class.fa-chevron-down]="!group.isExpanded" [class.fa-chevron-up]="group.isExpanded"></i>
+              </div>
+              <div class="card-content" [class.expanded]="group.isExpanded">
+                <div class="violation-list">
+                  <div *ngFor="let v of group.violations; let idx = index" class="violation-item" [class.with-divider]="idx !== 0">
+                    <div class="violation-header">
+                      <span class="violation-icon">⚠️</span>
+                      <span class="violation-title">{{ v.translatedDescription }}</span>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <ng-template #nessunaViolazione>
-              <div class="success-message">
-                <i class="fas fa-check-circle"></i>
-                <div>
-                  <h4>Ottimo lavoro!</h4>
-                  <p>Nessuna violazione rilevata! Il sito rispetta le linee guida di accessibilità. 🎉</p>
-                </div>
-              </div>
-            </ng-template>
-          </div>
-
-
-          <!-- MODALE DETTAGLI LIGHTHOUSE -->
-          <div class="lh-modal-backdrop" *ngIf="showLighthouseModal">
-            <div class="lh-modal">
-              <button class="lh-modal-close" (click)="closeLighthouseModal()"><i class="fas fa-times"></i></button>
-
-              <div class="modal-header">
-                <div class="category-icon">
-                  <i class="fas" [class]="getCategoryIcon(selectedLighthouseCategory)"></i>
-                </div>
-                <div class="category-info">
-                  <h2>{{ getCategoryTitle(selectedLighthouseCategory) }}</h2>
-                  <p class="category-description">{{ getCategoryDescription(selectedLighthouseCategory) }}</p>
-                </div>
-              </div>
-
-              <div class="modal-content">
-                <div class="score-summary">
-                  <div class="score-circle" [ngClass]="getScoreClass(getCategoryScore(selectedLighthouseCategory))">
-                    <span class="score-number">{{ getCategoryScore(selectedLighthouseCategory) }}</span>
-                    <span class="score-label">/100</span>
-                  </div>
-                  <div class="score-message">
-                    <h3>{{ getScoreMessage(getCategoryScore(selectedLighthouseCategory)) }}</h3>
-                    <p>{{ getScoreDescription(getCategoryScore(selectedLighthouseCategory)) }}</p>
-                  </div>
-                </div>
-
-                <div class="improvements-section" *ngIf="getLighthouseAudits(selectedLighthouseCategory).length > 0">
-                  <h3>🔧 Possibili miglioramenti</h3>
-                  <div class="improvements-list">
-                    <div *ngFor="let audit of getLighthouseAudits(selectedLighthouseCategory)"
-                         class="improvement-item"
-                         [ngClass]="getAuditStatusClass(audit)">
-                      <div class="improvement-header">
-                        <i class="fas" [ngClass]="getAuditStatusIcon(audit)"></i>
-                        <span class="improvement-title">{{ getAuditTitle(audit) }}</span>
-                        <span class="audit-status-label">{{ getAuditStatusLabel(audit) }}</span>
+                    <div class="violation-info">
+                      <div *ngIf="v.nodes[0]?.target" class="info-row">
+                        <span class="info-label">Elemento:</span>
+                        <code class="info-value">{{ formatElementPath(v.nodes[0].target[0]) }}</code>
                       </div>
-                      <div class="improvement-description">
-                        {{ getAuditDescription(audit) }}
+                      <div class="info-row">
+                        <span class="info-label">Soluzione:</span>
+                        <span class="info-value">{{ v.translatedSolution }}</span>
                       </div>
-                      <!-- LIGHTHOUSE AUDIT: aggiungi il pulsante per la spiegazione AI -->
-                      <div class="improvement-ai-explanation">
+                      <div class="info-row ai-explanation">
                         <button
-                          (click)="getAuditAIExplanation(audit)"
-                          [disabled]="audit.aiExplanation && audit.aiExplanation !== 'Caricamento spiegazione...'"
-                          *ngIf="!audit.aiExplanation || audit.aiExplanation === 'Caricamento spiegazione...'">
+                          (click)="getAxeAIExplanation(v)"
+                          [disabled]="v.aiExplanation && v.aiExplanation !== 'Caricamento spiegazione...'"
+                          *ngIf="!v.aiExplanation || v.aiExplanation === 'Caricamento spiegazione...'">
                           Mostra spiegazione AI
                         </button>
-                        <span *ngIf="audit.aiExplanation && audit.aiExplanation !== 'Caricamento spiegazione...'" style="color: #000;">
-                          <strong>Spiegazione AI:</strong> {{ audit.aiExplanation }}
+                        <span *ngIf="v.aiExplanation && v.aiExplanation !== 'Caricamento spiegazione...'">
+                          <strong>Spiegazione AI:</strong> {{ v.aiExplanation }}
                         </span>
-                        <span *ngIf="audit.aiExplanation === 'Caricamento spiegazione...'">Caricamento spiegazione...</span>
+                        <span *ngIf="v.aiExplanation === 'Caricamento spiegazione...'">Caricamento spiegazione...</span>
                       </div>
-                      <div class="improvement-impact" *ngIf="getAuditImpact(audit)">
-                        <strong>Impatto:</strong> {{ getAuditImpact(audit) }}
-                      </div>
+                      <img *ngIf="v.nodes[0]?.screenshot"
+                          [src]="'data:image/png;base64,' + v.nodes[0].screenshot"
+                          class="violation-thumb"
+                          alt="Miniatura sezione errore">
                     </div>
-                  </div>
-                </div>
-
-                <div class="tips-section">
-                  <h3>💡 Suggerimenti generali</h3>
-                  <div class="tips-content">
-                    <p>{{ getCategoryTips(selectedLighthouseCategory) }}</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+          <ng-template #nessunaViolazione>
+            <div class="success-message">
+              <i class="fas fa-check-circle"></i>
+              <div>
+                <h4>Ottimo lavoro!</h4>
+                <p>Nessuna violazione rilevata! Il sito rispetta le linee guida di accessibilità. 🎉</p>
+              </div>
+            </div>
+          </ng-template>
+        </div>
 
-          <div *ngIf="lighthouseResults && lighthouseResults.error" class="error-message">
-            <i class="fas fa-exclamation-circle"></i>
-            <div>
-              <h4>Errore Lighthouse</h4>
-              <p>{{ lighthouseResults.error }}</p>
+        <!-- MODALE DETTAGLI LIGHTHOUSE -->
+        <div class="lh-modal-backdrop" *ngIf="showLighthouseModal">
+          <div class="lh-modal">
+            <button class="lh-modal-close" (click)="closeLighthouseModal()"><i class="fas fa-times"></i></button>
+
+            <div class="modal-header">
+              <div class="category-icon">
+                <i class="fas" [class]="getCategoryIcon(selectedLighthouseCategory)"></i>
+              </div>
+              <div class="category-info">
+                <h2>{{ getCategoryTitle(selectedLighthouseCategory) }}</h2>
+                <p class="category-description">{{ getCategoryDescription(selectedLighthouseCategory) }}</p>
+              </div>
+            </div>
+
+            <div class="modal-content">
+              <div class="score-summary">
+                <div class="score-circle" [ngClass]="getScoreClass(getCategoryScore(selectedLighthouseCategory))">
+                  <span class="score-number">{{ getCategoryScore(selectedLighthouseCategory) }}</span>
+                  <span class="score-label">/100</span>
+                </div>
+                <div class="score-message">
+                  <h3>{{ getScoreMessage(getCategoryScore(selectedLighthouseCategory)) }}</h3>
+                  <p>{{ getScoreDescription(getCategoryScore(selectedLighthouseCategory)) }}</p>
+                </div>
+              </div>
+
+              <div class="improvements-section" *ngIf="getLighthouseAudits(selectedLighthouseCategory).length > 0">
+                <h3>🔧 Possibili miglioramenti</h3>
+                <div class="improvements-list">
+                  <div *ngFor="let audit of getLighthouseAudits(selectedLighthouseCategory)"
+                      class="improvement-item"
+                      [ngClass]="getAuditStatusClass(audit)">
+                    <div class="improvement-header">
+                      <i class="fas" [ngClass]="getAuditStatusIcon(audit)"></i>
+                      <span class="improvement-title">{{ getAuditTitle(audit) }}</span>
+                      <span class="audit-status-label">{{ getAuditStatusLabel(audit) }}</span>
+                    </div>
+                    <div class="improvement-description">
+                      {{ getAuditDescription(audit) }}
+                    </div>
+                    <div class="improvement-ai-explanation">
+                      <button
+                        (click)="getAuditAIExplanation(audit)"
+                        [disabled]="audit.aiExplanation && audit.aiExplanation !== 'Caricamento spiegazione...'"
+                        *ngIf="!audit.aiExplanation || audit.aiExplanation === 'Caricamento spiegazione...'">
+                        Mostra spiegazione AI
+                      </button>
+                      <span *ngIf="audit.aiExplanation && audit.aiExplanation !== 'Caricamento spiegazione...'" style="color: #000;">
+                        <strong>Spiegazione AI:</strong> {{ audit.aiExplanation }}
+                      </span>
+                      <span *ngIf="audit.aiExplanation === 'Caricamento spiegazione...'">Caricamento spiegazione...</span>
+                    </div>
+                    <div class="improvement-impact" *ngIf="getAuditImpact(audit)">
+                      <strong>Impatto:</strong> {{ getAuditImpact(audit) }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tips-section">
+                <h3>💡 Suggerimenti generali</h3>
+                <div class="tips-content">
+                  <p>{{ getCategoryTips(selectedLighthouseCategory) }}</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </ng-template>
+
+        <div *ngIf="lighthouseResults && lighthouseResults.error" class="error-message">
+          <i class="fas fa-exclamation-circle"></i>
+          <div>
+            <h4>Errore Lighthouse</h4>
+            <p>{{ lighthouseResults.error }}</p>
+          </div>
+        </div>
+      </ng-container>
     </div>
+
+    <!-- Colonna anteprima -->
     <div class="preview-column">
       <div class="glass-bg"></div>
       <div class="preview-container">
-        <ng-container *ngIf="loading || !scanResults; else anteprimaReale">
-          <div class="skeleton-image"></div>
+
+        <!-- Skeleton loading per l'anteprima -->
+        <ng-container *ngIf="loading">
+          <div class="skeleton-image" style="height: 300px;"></div>
         </ng-container>
-        <ng-template #anteprimaReale>
+
+        <!-- Anteprima reale -->
+        <ng-container *ngIf="!loading && scanResults">
           <div *ngIf="scanResults && !loading">
-            <!-- Qui l'immagine reale e i controlli come già presenti -->
             <div class="preview-header centered-title">
               <h3><i class="fas fa-desktop"></i> <span>ANTEPRIMA SITO</span></h3>
               <div class="preview-controls">
@@ -453,47 +473,47 @@
               </div>
             </div>
             <div class="preview-wrapper"
-                 (mousedown)="onMouseDown($event)"
-                 (mousemove)="onMouseMove($event)"
-                 (mouseup)="onMouseUp()"
-                 (mouseleave)="onMouseUp()">
+                (mousedown)="onMouseDown($event)"
+                (mousemove)="onMouseMove($event)"
+                (mouseup)="onMouseUp()"
+                (mouseleave)="onMouseUp()">
               <div class="preview-image-wrapper">
                 <img #previewImage
-                     [src]="screenshotUrl"
-                     [style.transform]="'scale(' + previewScale + ')'"
-                     [style.transform-origin]="'0 0'"
-                     alt="Anteprima del sito con violazioni evidenziate"
-                     *ngIf="screenshotUrl"
-                     (load)="onImageLoad($event)"
-                     (error)="onImageError($event)">
+                    [src]="screenshotUrl"
+                    [style.transform]="'scale(' + previewScale + ')'"
+                    [style.transform-origin]="'0 0'"
+                    alt="Anteprima del sito con violazioni evidenziate"
+                    *ngIf="screenshotUrl"
+                    (load)="onImageLoad($event)"
+                    (error)="onImageError($event)">
                 <!-- Overlay heatmap -->
                 <div *ngIf="screenshotUrl && scanResults?.heatmapData"
-                     class="heatmap-overlay"
-                     [style.width.px]="imageClientWidth * previewScale"
-                     [style.height.px]="imageClientHeight * previewScale"
-                     [style.pointerEvents]="'none'"
-                     style="position:absolute; top:0; left:0; z-index:10;">
+                    class="heatmap-overlay"
+                    [style.width.px]="imageClientWidth * previewScale"
+                    [style.height.px]="imageClientHeight * previewScale"
+                    [style.pointerEvents]="'none'"
+                    style="position:absolute; top:0; left:0; z-index:10;">
                   <div *ngFor="let point of scanResults.heatmapData; let idx = index"
-                       class="heatmap-rect"
-                       [ngStyle]="{
-                         left: getScaledLeft(point) + 'px',
-                         top: getScaledTop(point) + 'px',
-                         width: getScaledWidth(point) + 'px',
-                         height: getScaledHeight(point) + 'px',
-                         border: '2px solid ' + getImpactColor(point.impact),
-                         zIndex: getHeatmapZIndex(point)
-                       }"
-                       (mouseenter)="showHeatmapTooltip(idx, $event)"
-                       (mouseleave)="hideHeatmapTooltip()">
+                      class="heatmap-rect"
+                      [ngStyle]="{
+                        left: getScaledLeft(point) + 'px',
+                        top: getScaledTop(point) + 'px',
+                        width: getScaledWidth(point) + 'px',
+                        height: getScaledHeight(point) + 'px',
+                        border: '2px solid ' + getImpactColor(point.impact),
+                        zIndex: getHeatmapZIndex(point)
+                      }"
+                      (mouseenter)="showHeatmapTooltip(idx, $event)"
+                      (mouseleave)="hideHeatmapTooltip()">
                   </div>
 
                   <!-- Tooltip per la heatmap -->
                   <div *ngIf="activeHeatmapTooltip !== null"
-                       class="heatmap-tooltip"
-                       [ngStyle]="{
-                         left: tooltipPosition.x + 'px',
-                         top: tooltipPosition.y + 'px'
-                       }">
+                      class="heatmap-tooltip"
+                      [ngStyle]="{
+                        left: tooltipPosition.x + 'px',
+                        top: tooltipPosition.y + 'px'
+                      }">
                     <div class="tooltip-header">
                       <span class="tooltip-impact" [ngClass]="'impact-' + getActiveTooltipImpact()">
                         {{ getActiveTooltipImpact() }}
@@ -514,10 +534,11 @@
               </div>
             </div>
           </div>
-        </ng-template>
+        </ng-container>
       </div>
     </div>
   </div>
+
   <!-- Messaggio di errore -->
   <div *ngIf="scanResults && scanResults.error" class="error-message">
     <i class="fas fa-exclamation-circle"></i>
@@ -527,7 +548,5 @@
     </div>
   </div>
 </div>
-
-  </div>
 
 </div>
