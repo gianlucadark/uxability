@@ -39,7 +39,6 @@
 
   <!-- Colonna Rust - Solo per scanMode light -->
   <div class="results-column-rust" *ngIf="scanMode === 'light'">
-    <div class="glass-bg"></div>
 
     <!-- Skeleton loading per Rust -->
     <div *ngIf="loading && scanMode === 'light'" class="rust-result-card flat rust-metrics-grid">
@@ -249,7 +248,7 @@
       <div class="glass-bg"></div>
 
       <!-- Skeleton loading per la colonna risultati -->
-      <ng-container *ngIf="loading">
+      <ng-container *ngIf="loading && scanMode === 'deep'">
         <div class="skeleton-header" style="height: 40px; margin-bottom: 1.5rem;"></div>
         <div class="skeleton-card" *ngFor="let i of [1,2,3,4]"></div>
       </ng-container>
@@ -359,7 +358,7 @@
               <i class="fas fa-check-circle"></i>
               <div>
                 <h4>Ottimo lavoro!</h4>
-                <p>Nessuna violazione rilevata! Il sito rispetta le linee guida di accessibilità. 🎉</p>
+                <p style="color: #000;">Nessuna violazione rilevata! Il sito rispetta le linee guida di accessibilità. 🎉</p>
               </div>
             </div>
           </ng-template>
@@ -451,7 +450,7 @@
       <div class="preview-container">
 
         <!-- Skeleton loading per l'anteprima -->
-        <ng-container *ngIf="loading">
+        <ng-container *ngIf="loading && scanMode === 'deep'">
           <div class="skeleton-image" style="height: 300px;"></div>
         </ng-container>
 
