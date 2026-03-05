@@ -8,6 +8,12 @@ import Footer from "@/components/Footer";
 import ScoreCircle from "@/components/ScoreCircle";
 import OpportunityCard from "@/components/OpportunityCard";
 import AuditModal from "@/components/AuditModal";
+import VisualInsights from "@/components/VisualInsights";
+import FieldDataBadges from "@/components/FieldDataBadges";
+import ResourceBreakdown from "@/components/ResourceBreakdown";
+import MainThreadBreakdown from "@/components/MainThreadBreakdown";
+import LabMetrics from "@/components/LabMetrics";
+import AIRecommendation from "@/components/AIRecommendation";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -68,23 +74,28 @@ export default function Home() {
     results.forEach((res, index) => {
       if (index > 0) doc.addPage();
 
-      // Header
-      doc.setFontSize(22);
-      doc.setTextColor(34, 211, 238); // Cyan-400
-      doc.text("UXABILITY REPORT", 14, 22);
+      // --- Header ---
+      doc.setFillColor(34, 211, 238); // Cyan-400
+      doc.rect(0, 0, 210, 40, 'F');
+
+      doc.setFontSize(24);
+      doc.setTextColor(255);
+      doc.text("UXABILITY ANALYSIS REPORT", 14, 25);
 
       doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(`Data: ${timestamp}`, 14, 30);
-      doc.text(`URL: ${res.url}`, 14, 36);
+      doc.setTextColor(255);
+      doc.text(`Generato il: ${timestamp}`, 170, 15, { align: 'right' });
+      doc.text(`URL Analizzato: ${res.url}`, 14, 33);
 
-      // Scores Table
+      let currentY = 50;
+
+      // --- 1. Global Scores ---
       doc.setFontSize(16);
       doc.setTextColor(0);
-      doc.text("Punteggi Globali", 14, 50);
+      doc.text("Punteggi Globali", 14, currentY);
 
       autoTable(doc, {
-        startY: 55,
+        startY: currentY + 5,
         head: [['Categoria', 'Punteggio']],
         body: [
           ['Performance', `${res.scores.performance}/100`],
@@ -95,11 +106,58 @@ export default function Home() {
         theme: 'striped',
         headStyles: { fillColor: [34, 211, 238] }
       });
+      currentY = (doc as any).lastAutoTable.finalY + 15;
 
-      // Opportunities
-      const finalY = (doc as any).lastAutoTable.finalY + 15;
+      // --- 2. Core Web Vitals (Esperienza Reale) ---
+      if (res.fieldData && res.fieldData.metrics) {
+        doc.setFontSize(16);
+        doc.text("Esperienza Utenti Reali (Core Web Vitals)", 14, currentY);
+
+        const cwvs = Object.entries(res.fieldData.metrics).map(([key, val]: [string, any]) => [
+          key.replace(/_/g, ' '),
+          key.includes("SCORE") ? (val.percentile / 100).toFixed(2) : `${(val.percentile / 1000).toFixed(2)}s`,
+          val.category
+        ]);
+
+        autoTable(doc, {
+          startY: currentY + 5,
+          head: [['Metrica', 'Valore', 'Stato']],
+          body: cwvs,
+          theme: 'grid',
+          headStyles: { fillColor: [16, 185, 129] } // Emerald-500
+        });
+        currentY = (doc as any).lastAutoTable.finalY + 15;
+      }
+
+      // --- 3. Resource Breakdown ---
       doc.setFontSize(16);
-      doc.text("Migliorie Suggerite", 14, finalY);
+      doc.text("Composizione Pesantezza Pagina", 14, currentY);
+
+      const resources = res.resourceSummary
+        .filter((r: any) => r.resourceType !== 'total')
+        .map((r: any) => [
+          r.label,
+          r.requestCount,
+          r.transferSize > 1024 * 1024 ? `${(r.transferSize / (1024 * 1024)).toFixed(2)} MB` : `${(r.transferSize / 1024).toFixed(2)} KB`
+        ]);
+
+      autoTable(doc, {
+        startY: currentY + 5,
+        head: [['Tipo Risorsa', 'Richieste', 'Dimensione']],
+        body: resources,
+        theme: 'striped',
+        headStyles: { fillColor: [59, 130, 246] } // Blue-500
+      });
+      currentY = (doc as any).lastAutoTable.finalY + 15;
+
+      // --- New Page for Recommendations ---
+      doc.addPage();
+      currentY = 20;
+
+      // --- 4. Suggestions and Criticalities ---
+      doc.setFontSize(16);
+      doc.setTextColor(0);
+      doc.text("Priorità di Intervento e Migliorie", 14, currentY);
 
       const oppBody = res.opportunities.map((o: any) => [
         o.title,
@@ -108,27 +166,28 @@ export default function Home() {
       ]);
 
       autoTable(doc, {
-        startY: finalY + 5,
-        head: [['Problema', 'Gravità', 'Impatto Stimato']],
+        startY: currentY + 5,
+        head: [['Problema Rilevato', 'Gravità', 'Impatto Stimato']],
         body: oppBody,
         theme: 'grid',
-        headStyles: { fillColor: [59, 130, 246] } // Blue-500
+        headStyles: { fillColor: [244, 63, 94] } // Rose-500
       });
 
-      // Simple description logic
+      currentY = (doc as any).lastAutoTable.finalY + 15;
+
+      // --- Summary Note ---
       doc.setFontSize(12);
-      const summaryY = (doc as any).lastAutoTable.finalY + 15;
-      doc.text("Analisi Tecnica:", 14, summaryY);
+      doc.text("Conclusione Tecnica:", 14, currentY);
       doc.setFontSize(10);
-      const splitText = doc.splitTextToSize(
-        `Questa pagina ha un punteggio di performance di ${res.scores.performance}. ` +
-        `Per migliorare il posizionamento e l'esperienza utente, si consiglia di intervenire sulle opportunità sopra elencate, ` +
-        `particolarmente quelle con gravità 'High'.`, 180
-      );
-      doc.text(splitText, 14, summaryY + 7);
+      doc.setTextColor(80);
+      const conclusion = `Il sito web analizzato presenta un punteggio di performance di ${res.scores.performance}/100. ` +
+        `Si consiglia di focalizzarsi prioritariamente sulle criticità contrassegnate come 'High' per migliorare l'esperienza utente ` +
+        `e l'indicizzazione sui motori di ricerca.`;
+      const splitText = doc.splitTextToSize(conclusion, 180);
+      doc.text(splitText, 14, currentY + 7);
     });
 
-    const filename = `Report_UXAbility_${new URL(results[0].url).hostname}.pdf`;
+    const filename = `Report_Completo_UXAbility_${new URL(results[0].url).hostname}.pdf`;
     doc.save(filename);
   };
 
@@ -327,8 +386,35 @@ export default function Home() {
                 />
               </div>
 
-              {/* Opportunities Section */}
-              <div className="space-y-6">
+              {/* 0. Strategic AI Advice */}
+              <AIRecommendation
+                score={currentResult.scores.performance}
+                opportunities={currentResult.opportunities}
+              />
+
+              {/* 1. Core Visuals & Real World Experience */}
+              <div className="space-y-16">
+                {/* 
+                <VisualInsights 
+                  screenshot={currentResult.screenshot} 
+                  thumbnails={currentResult.thumbnails} 
+                /> 
+                */}
+
+                <FieldDataBadges fieldData={currentResult.fieldData} />
+              </div>
+
+              {/* 2. Technical Lab Simulation */}
+              <LabMetrics metrics={currentResult.keyMetrics} />
+
+              {/* 3. Deep Analysis: Main Thread & Resources */}
+              <div className="space-y-12 pt-8 border-t border-white/5">
+                <ResourceBreakdown resources={currentResult.resourceSummary} />
+                <MainThreadBreakdown items={currentResult.mainThreadWork} />
+              </div>
+
+              {/* 4. Priorities & Opportunities */}
+              <div className="space-y-12">
                 <div className="flex items-center gap-3">
                   <h3 className="text-2xl font-bold">Criticità e Migliorie</h3>
                   <div className="h-px flex-grow bg-white/10"></div>

@@ -103,6 +103,29 @@ async function analyzeUrl(url: string, apiKey?: string) {
     const categoriesData = lighthouse.categories;
     const audits = lighthouse.audits;
 
+    const screenshot = lighthouse.audits["final-screenshot"]?.details?.data;
+    const thumbnails = lighthouse.audits["screenshot-thumbnails"]?.details?.items || [];
+    const fieldData = data.loadingExperience || null;
+
+    const resourceSummary = lighthouse.audits["resource-summary"]?.details?.items || [];
+    const mainThreadWork = lighthouse.audits["mainthread-work-breakdown"]?.details?.items || [];
+
+    // Key Metrics extraction
+    const keyMetrics = {
+        lcp: audits["largest-contentful-paint"]?.displayValue,
+        fid: audits["max-potential-fid"]?.displayValue,
+        cls: audits["cumulative-layout-shift"]?.displayValue,
+        tbt: audits["total-blocking-time"]?.displayValue,
+        si: audits["speed-index"]?.displayValue,
+        tti: audits["interactive"]?.displayValue,
+        fcp: audits["first-contentful-paint"]?.displayValue,
+    };
+
+    const seoMetadata = {
+        title: audits["document-title"]?.displayValue || "Nessun Titolo",
+        description: audits["meta-description"]?.displayValue || "Nessuna descrizione trovata per questo sito."
+    };
+
     const scores = {
         performance: Math.round(categoriesData.performance.score * 100),
         accessibility: Math.round(categoriesData.accessibility.score * 100),
@@ -145,7 +168,19 @@ async function analyzeUrl(url: string, apiKey?: string) {
             level: audit.score < 0.5 ? "High" : audit.score < 0.9 ? "Medium" : "Low",
         }));
 
-    return { scores, details, opportunities, url: lighthouse.finalUrl };
+    return {
+        scores,
+        details,
+        opportunities,
+        url: lighthouse.finalUrl,
+        screenshot,
+        thumbnails,
+        fieldData,
+        resourceSummary,
+        mainThreadWork,
+        keyMetrics,
+        seoMetadata
+    };
 }
 
 export async function POST(req: Request) {
