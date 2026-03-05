@@ -90,25 +90,25 @@ export default function LabMetrics({ metrics }: LabMetricsProps) {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: i * 0.1 }}
-                        className="group flex flex-col p-8 glass rounded-[2.5rem] border border-white/5 bg-gradient-to-br from-white/[0.03] to-white/[0.01] hover:bg-white/[0.07] transition-all duration-500"
+                        className="group flex flex-col p-6 md:p-8 glass rounded-[2rem] md:rounded-[2.5rem] border border-white/5 bg-gradient-to-br from-white/[0.03] to-white/[0.01] hover:bg-white/[0.07] transition-all duration-500"
                     >
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="p-3 rounded-2xl bg-black/20 text-cyan-400 group-hover:scale-110 group-hover:bg-cyan-400/10 transition-all duration-500 shadow-xl shadow-black/10">
+                        <div className="flex items-center justify-between mb-6 md:mb-8">
+                            <div className="p-2.5 md:p-3 rounded-2xl bg-black/20 text-cyan-400 group-hover:scale-110 group-hover:bg-cyan-400/10 transition-all duration-500 shadow-xl shadow-black/10">
                                 {item.icon}
                             </div>
                             <div className="text-[10px] font-black uppercase tracking-widest opacity-20 group-hover:opacity-100 transition-opacity">Info</div>
                         </div>
 
-                        <div className="space-y-1 mb-6">
-                            <div className="text-sm font-black uppercase tracking-widest text-zinc-400">{item.label}</div>
-                            <div className="text-4xl font-black font-mono tracking-tighter text-white transition-transform group-hover:translate-x-1 duration-500">
+                        <div className="space-y-1 mb-4 md:mb-6">
+                            <div className="text-xs md:text-sm font-black uppercase tracking-widest text-zinc-400">{item.label}</div>
+                            <div className="text-3xl md:text-4xl font-black font-mono tracking-tighter text-white transition-transform group-hover:translate-x-1 duration-500">
                                 {item.value}
                             </div>
                         </div>
 
-                        <div className="pt-6 border-t border-white/5 mt-auto">
-                            <h5 className="text-[11px] font-black uppercase tracking-tighter text-white mb-2 opacity-60">{item.title}</h5>
-                            <p className="text-xs text-zinc-500 leading-relaxed font-medium">
+                        <div className="pt-4 md:pt-6 border-t border-white/5 mt-auto">
+                            <h5 className="text-[10px] md:text-[11px] font-black uppercase tracking-tighter text-white mb-2 opacity-60">{item.title}</h5>
+                            <p className="text-[11px] md:text-xs text-zinc-500 leading-relaxed font-medium">
                                 {item.desc}
                             </p>
                         </div>

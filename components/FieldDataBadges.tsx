@@ -98,65 +98,65 @@ export default function FieldDataBadges({ fieldData }: FieldDataBadgesProps) {
                 <div className="space-y-2">
                     <div className="flex items-center gap-3">
                         <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400">
-                            <Globe className="w-6 h-6" />
+                            <Globe className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <h3 className="text-3xl font-black font-display text-white">Core Web Vitals</h3>
+                        <h3 className="text-2xl md:text-3xl font-black font-display text-white">Core Web Vitals</h3>
                     </div>
-                    <p className="text-zinc-500 font-medium max-w-xl text-sm italic">
+                    <p className="text-zinc-500 font-medium max-w-xl text-xs md:text-sm italic">
                         Questi dati riflettono l'esperienza attuale dei tuoi navigatori reali (Chrome UX Report). Google li utilizza per il posizionamento SEO.
                     </p>
                 </div>
 
-                <div className="flex items-center gap-4 bg-white/5 border border-white/10 px-6 py-3 rounded-2xl shadow-inner">
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-emerald-400">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" /> Veloce
+                <div className="flex flex-wrap items-center gap-3 md:gap-4 bg-white/5 border border-white/10 px-4 md:px-6 py-2.5 md:py-3 rounded-2xl shadow-inner">
+                    <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-emerald-400">
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" /> Veloce
                     </div>
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-amber-400">
-                        <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" /> Normale
+                    <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-amber-400">
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" /> Normale
                     </div>
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-rose-400">
-                        <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" /> Lento
+                    <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-rose-400">
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" /> Lento
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 {metricArray.map((metric, i) => (
                     <motion.div
                         key={metric.key}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.15 }}
-                        className="group relative glass rounded-[2rem] p-8 border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all duration-500 overflow-hidden"
+                        className="group relative glass rounded-[2rem] p-6 md:p-8 border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all duration-500 overflow-hidden"
                     >
                         {/* Status Glow Background */}
                         <div className={`absolute -right-20 -top-20 w-48 h-48 blur-[100px] opacity-10 bg-gradient-to-br ${getStatusColor(metric.status)}`} />
 
                         <div className="flex items-start justify-between relative z-10">
-                            <div className="space-y-4 flex-grow pr-6">
+                            <div className="space-y-3 md:space-y-4 flex-grow pr-4 md:pr-6">
                                 <div className="flex items-center gap-3">
-                                    <div className={`p-2 rounded-xl bg-black/20 text-white/80`}>
+                                    <div className={`p-1.5 md:p-2 rounded-xl bg-black/20 text-white/80`}>
                                         {metric.icon}
                                     </div>
-                                    <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">{metric.label}</h4>
+                                    <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">{metric.label}</h4>
                                 </div>
 
                                 <div className="space-y-1">
-                                    <div className="text-5xl font-black font-mono tracking-tighter text-white">
+                                    <div className="text-3xl md:text-5xl font-black font-mono tracking-tighter text-white">
                                         {metric.value}
                                     </div>
-                                    <div className={`text-[10px] font-black uppercase tracking-widest inline-flex px-2 py-0.5 rounded bg-gradient-to-r text-white ${getStatusColor(metric.status)}`}>
+                                    <div className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest inline-flex px-1.5 md:px-2 py-0.5 rounded bg-gradient-to-r text-white ${getStatusColor(metric.status)}`}>
                                         {getStatusText(metric.status)}
                                     </div>
                                 </div>
 
-                                <p className="text-xs text-zinc-500 leading-relaxed font-medium">
+                                <p className="text-[11px] md:text-xs text-zinc-500 leading-relaxed font-medium">
                                     {metric.desc}
                                 </p>
                             </div>
 
-                            <div className="flex flex-col gap-1 items-end pt-2">
-                                <div className="h-40 w-1.5 rounded-full bg-black/40 overflow-hidden flex flex-col-reverse">
+                            <div className="flex flex-col gap-1 items-end pt-2 shrink-0">
+                                <div className="h-24 md:h-40 w-1 md:w-1.5 rounded-full bg-black/40 overflow-hidden flex flex-col-reverse">
                                     {metric.distributions.map((d: any, idx: number) => (
                                         <div
                                             key={idx}
@@ -165,7 +165,7 @@ export default function FieldDataBadges({ fieldData }: FieldDataBadgesProps) {
                                         />
                                     ))}
                                 </div>
-                                <span className="text-[8px] font-bold opacity-30 uppercase tracking-widest mt-2 origin-center rotate-90">Distr.</span>
+                                <span className="text-[7px] md:text-[8px] font-bold opacity-30 uppercase tracking-widest mt-2 origin-center rotate-90">Distr.</span>
                             </div>
                         </div>
                     </motion.div>

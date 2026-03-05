@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "UXABILITY",
+  title: "Uxability",
   description: "Analizza il tuo sito web con un crawl intelligente. Ricevi report PDF completi su velocità, SEO e come migliorare.",
   icons: {
     icon: "/favicon.ico",

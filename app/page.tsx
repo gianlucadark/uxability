@@ -202,7 +202,7 @@ export default function Home() {
 
       <Navbar />
 
-      <main className="w-full max-w-5xl px-6 pt-32 pb-20 flex-grow relative">
+      <main className="w-full max-w-5xl px-4 md:px-6 pt-24 md:pt-32 pb-20 flex-grow relative">
         {/* Hero Section */}
         <section className="text-center mb-16">
           <motion.h1
@@ -234,17 +234,23 @@ export default function Home() {
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="Inserisci l'URL del sito (es. vercel.com)"
-                className="w-full h-16 pl-14 pr-32 rounded-2xl glass outline-none border border-white/10 focus:border-cyan-400/50 transition-all text-lg placeholder:opacity-40"
+                placeholder="Inserisci l'URL (es. vercel.com)"
+                className="w-full h-14 md:h-16 pl-12 md:pl-14 pr-14 md:pr-40 rounded-2xl glass outline-none border border-white/10 focus:border-cyan-400/50 transition-all text-base md:text-lg placeholder:opacity-40"
               />
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 opacity-40 group-focus-within:opacity-100 transition-opacity" size={24} />
+              <Search className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 opacity-40 group-focus-within:opacity-100 transition-opacity" size={20} />
               <button
                 type="submit"
                 disabled={loading || !url}
-                className="absolute right-2 top-2 bottom-2 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-bold hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] disabled:opacity-50 disabled:hover:shadow-none transition-all flex items-center gap-2"
+                className="absolute right-1.5 top-1.5 bottom-1.5 px-3 md:px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-bold hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] disabled:opacity-50 disabled:hover:shadow-none transition-all flex items-center justify-center gap-2"
               >
-                {loading ? <Loader2 className="animate-spin" size={20} /> : "Analizza Sito"}
-                {!loading && <ArrowRight size={20} />}
+                {loading ? (
+                  <Loader2 className="animate-spin" size={18} />
+                ) : (
+                  <>
+                    <span className="hidden md:inline">Analizza Sito</span>
+                    <ArrowRight size={18} />
+                  </>
+                )}
               </button>
             </div>
 

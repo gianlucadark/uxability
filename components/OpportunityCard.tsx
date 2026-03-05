@@ -32,17 +32,17 @@ export default function OpportunityCard({ opportunity, index }: { opportunity: O
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.8 + index * 0.1 }}
-            className={`glass p-5 rounded-xl border-l-4 ${getBorderColor(opportunity.level)} flex gap-4`}
+            className={`glass p-4 md:p-5 rounded-xl border-l-4 ${getBorderColor(opportunity.level)} flex flex-col sm:flex-row gap-3 md:gap-4`}
         >
-            <div className="mt-1">{getIcon(opportunity.level)}</div>
-            <div>
-                <div className="flex items-center justify-between mb-1">
-                    <h4 className="font-semibold text-lg">{opportunity.title}</h4>
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${getBorderColor(opportunity.level)}`}>
+            <div className="mt-1 shrink-0">{getIcon(opportunity.level)}</div>
+            <div className="flex-grow min-w-0">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                    <h4 className="font-semibold text-base md:text-lg leading-tight break-words">{opportunity.title}</h4>
+                    <span className={`text-[10px] md:text-xs px-2 py-0.5 rounded-full border self-start sm:self-center whitespace-nowrap ${getBorderColor(opportunity.level)}`}>
                         {opportunity.impact}
                     </span>
                 </div>
-                <p className="text-sm opacity-70 leading-relaxed text-zinc-300"
+                <p className="text-xs md:text-sm opacity-70 leading-relaxed text-zinc-300 break-words"
                     dangerouslySetInnerHTML={{ __html: opportunity.description }} />
             </div>
         </motion.div>
