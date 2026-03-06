@@ -14,6 +14,8 @@ import ResourceBreakdown from "@/components/ResourceBreakdown";
 import MainThreadBreakdown from "@/components/MainThreadBreakdown";
 import LabMetrics from "@/components/LabMetrics";
 import AIRecommendation from "@/components/AIRecommendation";
+import FrustrationIndex from "@/components/FrustrationIndex";
+import SocialPreview from "@/components/SocialPreview";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useLanguage } from "@/context/LanguageContext";
@@ -257,6 +259,7 @@ export default function Home() {
             <AnimatePresence>
               {loading && (
                 <motion.div
+                  key="loading-bar"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -272,6 +275,7 @@ export default function Home() {
               )}
               {loading && (
                 <motion.p
+                  key="loading-text"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="absolute -bottom-8 left-0 right-0 text-center text-xs font-medium opacity-50 animate-pulse pointer-events-none"
@@ -297,7 +301,7 @@ export default function Home() {
         <AnimatePresence mode="wait">
           {results && currentResult && (
             <motion.section
-              key={activeResultIndex}
+              key={`dashboard-${currentResult.url}-${activeResultIndex}`}
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
@@ -336,7 +340,7 @@ export default function Home() {
                 <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-12 p-3 glass rounded-3xl border border-white/5 bg-white/[0.02]">
                   {results.map((res, i) => (
                     <button
-                      key={i}
+                      key={`tab-${i}-${res.url}`}
                       onClick={() => setActiveResultIndex(i)}
                       className={`px-4 md:px-6 py-2 md:py-3 rounded-2xl text-[10px] md:text-xs font-bold transition-all flex items-center gap-2 ${activeResultIndex === i
                         ? "bg-gradient-to-br from-cyan-400 to-blue-600 text-white shadow-[0_8px_25px_rgba(34,211,238,0.25)] scale-[1.02]"
@@ -407,6 +411,12 @@ export default function Home() {
                 */}
 
                 <FieldDataBadges fieldData={currentResult.fieldData} />
+
+                {/* New Feature: User Frustration Index */}
+                <FrustrationIndex
+                  cls={currentResult.keyMetrics.cls_v || 0}
+                  tbt={currentResult.keyMetrics.tbt_v || 0}
+                />
               </div>
 
               {/* 2. Technical Lab Simulation */}
@@ -418,6 +428,12 @@ export default function Home() {
                 <MainThreadBreakdown items={currentResult.mainThreadWork} />
               </div>
 
+              {/* New Feature: Social Share Preview */}
+              <SocialPreview
+                metadata={currentResult.seoMetadata}
+                url={currentResult.url}
+              />
+
               {/* 4. Priorities & Opportunities */}
               <div className="space-y-12">
                 <div className="flex items-center gap-3">
@@ -428,7 +444,7 @@ export default function Home() {
                 <div className="grid grid-cols-1 gap-4">
                   {currentResult.opportunities.length > 0 ? (
                     currentResult.opportunities.map((opp: any, i: number) => (
-                      <OpportunityCard key={i} opportunity={opp} index={i} />
+                      <OpportunityCard key={`opp-${i}-${opp.title.substring(0, 10)}`} opportunity={opp} index={i} />
                     ))
                   ) : (
                     <div className="p-8 glass rounded-2xl border border-white/10 text-center opacity-50">

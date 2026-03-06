@@ -103,6 +103,7 @@ async function analyzeUrl(url: string, apiKey?: string, lang: string = 'it') {
     const lighthouse = data.lighthouseResult;
     const categoriesData = lighthouse.categories;
     const audits = lighthouse.audits;
+    console.log("RESULT", lighthouse);
 
     const screenshot = lighthouse.audits["final-screenshot"]?.details?.data;
     const thumbnails = lighthouse.audits["screenshot-thumbnails"]?.details?.items || [];
@@ -120,12 +121,26 @@ async function analyzeUrl(url: string, apiKey?: string, lang: string = 'it') {
         si: audits["speed-index"]?.displayValue,
         tti: audits["interactive"]?.displayValue,
         fcp: audits["first-contentful-paint"]?.displayValue,
+        // Numeric values for calculations
+        lcp_v: audits["largest-contentful-paint"]?.numericValue,
+        cls_v: audits["cumulative-layout-shift"]?.numericValue,
+        tbt_v: audits["total-blocking-time"]?.numericValue,
     };
 
     const seoMetadata = {
         title: audits["document-title"]?.displayValue || "Nessun Titolo",
-        description: audits["meta-description"]?.displayValue || "Nessuna descrizione trovata per questo sito."
+        description: audits["meta-description"]?.displayValue || "Nessuna descrizione trovata per questo sito.",
+        ogImage: audits["og-image"]?.displayValue || null,
+        favicon: audits["favicon"]?.displayValue || null
     };
+
+    // Try to extract more SEO data if available in audits or by a quick fetch if needed
+    // But PageSpeed usually has some of this in its audits if enabled. 
+    // Let's check some common audit IDs for images.
+    const ogImageAudit = audits["og-image"];
+    if (ogImageAudit && ogImageAudit.details && ogImageAudit.details.data) {
+        seoMetadata.ogImage = ogImageAudit.details.data;
+    }
 
     const scores = {
         performance: Math.round(categoriesData.performance.score * 100),
@@ -168,6 +183,36 @@ async function analyzeUrl(url: string, apiKey?: string, lang: string = 'it') {
             impact: audit.displayValue || (audit.details?.overallSavingsMs ? `${audit.details.overallSavingsMs}ms` : ""),
             level: audit.score < 0.5 ? "High" : audit.score < 0.9 ? "Medium" : "Low",
         }));
+
+    // Fallback: Fetch HTML to get meta tags that PageSpeed might miss
+    try {
+        const pageRes = await fetch(url);
+        const html = await pageRes.text();
+        const $ = cheerio.load(html);
+
+        if (!seoMetadata.ogImage) {
+            seoMetadata.ogImage = $('meta[property="og:image"]').attr('content') ||
+                $('meta[name="twitter:image"]').attr('content') || null;
+        }
+
+        if (!seoMetadata.favicon) {
+            seoMetadata.favicon = $('link[rel="icon"]').attr('href') ||
+                $('link[rel="shortcut icon"]').attr('href') ||
+                new URL('/favicon.ico', url).toString();
+        }
+
+        // If title/desc are still missing or very short, try to get them from HTML
+        if (seoMetadata.title === "Nessun Titolo") {
+            seoMetadata.title = $('title').text() || $('meta[property="og:title"]').attr('content') || "Nessun Titolo";
+        }
+        if (seoMetadata.description.includes("Nessuna descrizione")) {
+            seoMetadata.description = $('meta[name="description"]').attr('content') ||
+                $('meta[property="og:description"]').attr('content') ||
+                seoMetadata.description;
+        }
+    } catch (e) {
+        console.error("Manual meta extraction failed", e);
+    }
 
     return {
         scores,

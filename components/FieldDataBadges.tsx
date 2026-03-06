@@ -127,7 +127,7 @@ export default function FieldDataBadges({ fieldData }: FieldDataBadgesProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 {metricArray.map((metric, i) => (
                     <motion.div
-                        key={metric.key}
+                        key={`${metric.key}-${i}`}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.15 }}

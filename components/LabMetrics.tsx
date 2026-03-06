@@ -89,7 +89,7 @@ export default function LabMetrics({ metrics }: LabMetricsProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {items.map((item, i) => (
                     <motion.div
-                        key={item.key}
+                        key={`${item.key}-${i}`}
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: i * 0.1 }}

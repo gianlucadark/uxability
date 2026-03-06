@@ -67,8 +67,8 @@ export default function AuditModal({ isOpen, onClose, title, audits }: AuditModa
                                     {t('testFailed')} ({failedAudits.length})
                                 </h4>
                                 <div className="grid gap-3">
-                                    {failedAudits.map((audit) => (
-                                        <div key={audit.id} className="p-4 rounded-xl bg-rose-500/5 border border-rose-500/20">
+                                    {failedAudits.map((audit, i) => (
+                                        <div key={`${audit.id}-${i}`} className="p-4 rounded-xl bg-rose-500/5 border border-rose-500/20">
                                             <div className="flex items-start justify-between gap-4 mb-2">
                                                 <span className="font-semibold">{audit.title}</span>
                                                 {audit.displayValue && (
@@ -91,8 +91,8 @@ export default function AuditModal({ isOpen, onClose, title, audits }: AuditModa
                                 {t('testPassed')} ({passedAudits.length})
                             </h4>
                             <div className="grid gap-3">
-                                {passedAudits.map((audit) => (
-                                    <div key={audit.id} className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                                {passedAudits.map((audit, i) => (
+                                    <div key={`${audit.id}-${i}`} className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
                                         <div className="flex items-start justify-between gap-4 mb-1">
                                             <span className="font-semibold opacity-90">{audit.title}</span>
                                         </div>

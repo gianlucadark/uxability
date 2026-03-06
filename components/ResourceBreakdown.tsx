@@ -74,7 +74,7 @@ export default function ResourceBreakdown({ resources }: ResourceBreakdownProps)
                     <div className="h-8 md:h-10 w-full flex rounded-xl md:rounded-2xl overflow-hidden shadow-2xl bg-black/40 border border-white/5">
                         {formatted.map((res, i) => (
                             <motion.div
-                                key={res.resourceType}
+                                key={`${res.resourceType}-${i}`}
                                 initial={{ width: 0 }}
                                 animate={{ width: `${(res.transferSize / totalSize) * 100}%` }}
                                 transition={{ delay: i * 0.1, duration: 1.5, ease: "circOut" }}
@@ -84,8 +84,8 @@ export default function ResourceBreakdown({ resources }: ResourceBreakdownProps)
                     </div>
 
                     <div className="flex flex-wrap gap-x-6 gap-y-3 mt-4 md:mt-6">
-                        {formatted.slice(0, 5).map((res) => (
-                            <div key={res.resourceType} className="flex items-center gap-2">
+                        {formatted.slice(0, 5).map((res, i) => (
+                            <div key={`${res.resourceType}-label-${i}`} className="flex items-center gap-2">
                                 <div className={`w-2.5 h-2.5 rounded-full ${getTypeColor(res.resourceType)}`} />
                                 <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-500">{t(res.resourceType) || res.label}</span>
                             </div>
@@ -96,7 +96,7 @@ export default function ResourceBreakdown({ resources }: ResourceBreakdownProps)
                 {/* Individual Type Cards - Bento Style */}
                 {formatted.slice(0, 4).map((res, i) => (
                     <motion.div
-                        key={res.resourceType}
+                        key={`${res.resourceType}-card-${i}`}
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.5 + i * 0.1 }}

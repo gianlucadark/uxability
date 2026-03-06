@@ -100,7 +100,7 @@ export default function MainThreadBreakdown({ items }: MainThreadBreakdownProps)
                     <div className="flex-grow w-full space-y-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                             {items.slice(0, 4).map((item, i) => (
-                                <div key={item.group} className="flex items-center gap-3 md:gap-4 bg-white/[0.02] p-3 md:p-4 rounded-2xl border border-white/5 border-l-4 group hover:bg-white/[0.05] transition-all" style={{ borderLeftColor: `var(--${item.group}-color, currentColor)` }}>
+                                <div key={`${item.group}-${i}`} className="flex items-center gap-3 md:gap-4 bg-white/[0.02] p-3 md:p-4 rounded-2xl border border-white/5 border-l-4 group hover:bg-white/[0.05] transition-all" style={{ borderLeftColor: `var(--${item.group}-color, currentColor)` }}>
                                     <div className={`${getGroupColor(item.group).replace('bg-', 'text-')} opacity-60`}>
                                         {getIcon(item.group)}
                                     </div>

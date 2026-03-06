@@ -170,7 +170,26 @@ export const translations = {
         image: "Immagine",
         media: "Media",
         font: "Font",
-        xhr: "XHR/Fetch"
+        xhr: "XHR/Fetch",
+
+        // Rage Meter
+        rageMeterTitle: "User Frustration Index",
+        rageMeterSubtitle: "Traduciamo i dati tecnici in emozioni. Se i parametri sono pessimi, l'utente scappa.",
+        rageIndexLabel: "Livello di Frustrazione",
+        rageStatus_low: "Utente Felice",
+        rageStatus_medium: "Utente Impaziente",
+        rageStatus_high: "Utente Frustrato",
+        rageStatus_extreme: "Rage! Utente in fuga",
+        rageDesc_low: "Il sito è fluido e stabile. L'utente naviga con piacere.",
+        rageDesc_medium: "Qualche piccolo rallentamento o spostamento di layout inizia a infastidire.",
+        rageDesc_high: "L'attesa è troppa o la pagina 'balla'. Rischio abbandono elevato.",
+        rageDesc_extreme: "Esperienza pessima. L'utente probabilmente chiude la tab prima che carichi.",
+
+        // Social Preview
+        socialPreviewTitle: "Social Share Preview",
+        socialPreviewSubtitle: "Ecco come apparirà il tuo sito quando verrà condiviso sui social media.",
+        socialPreviewCard: "Anteprima Link",
+        socialPreviewHint: "Un'immagine e una descrizione accattivanti aumentano il CTR del 30%."
     },
     en: {
         // Navbar
@@ -343,7 +362,26 @@ export const translations = {
         image: "Image",
         media: "Media",
         font: "Font",
-        xhr: "XHR/Fetch"
+        xhr: "XHR/Fetch",
+
+        // Rage Meter
+        rageMeterTitle: "User Frustration Index",
+        rageMeterSubtitle: "Translating technical data into emotions. If parameters are poor, the user leaves.",
+        rageIndexLabel: "Frustration Level",
+        rageStatus_low: "Happy User",
+        rageStatus_medium: "Impatient User",
+        rageStatus_high: "Frustrated User",
+        rageStatus_extreme: "Rage! User fleeing",
+        rageDesc_low: "The site is smooth and stable. The user navigates with pleasure.",
+        rageDesc_medium: "Some small slowdowns or layout shifts are starting to annoy.",
+        rageDesc_high: "The wait is too long or the page 'jumps'. High risk of abandonment.",
+        rageDesc_extreme: "Terrible experience. The user probably closes the tab before it loads.",
+
+        // Social Preview
+        socialPreviewTitle: "Social Share Preview",
+        socialPreviewSubtitle: "This is how your site will look when shared on social media.",
+        socialPreviewCard: "Link Preview",
+        socialPreviewHint: "A catchy image and description increase CTR by 30%."
     }
 };
 
