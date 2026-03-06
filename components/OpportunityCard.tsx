@@ -10,7 +10,10 @@ interface Opportunity {
     level: "High" | "Medium" | "Low";
 }
 
+import { useLanguage } from "@/context/LanguageContext";
+
 export default function OpportunityCard({ opportunity, index }: { opportunity: Opportunity, index: number }) {
+    const { t } = useLanguage();
     const getIcon = (level: string) => {
         switch (level) {
             case "High": return <AlertTriangle className="text-rose-400" size={24} />;
@@ -27,6 +30,14 @@ export default function OpportunityCard({ opportunity, index }: { opportunity: O
         }
     };
 
+    const getLevelText = (level: string) => {
+        switch (level) {
+            case "High": return t('high');
+            case "Medium": return t('medium');
+            default: return t('low');
+        }
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -38,9 +49,16 @@ export default function OpportunityCard({ opportunity, index }: { opportunity: O
             <div className="flex-grow min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                     <h4 className="font-semibold text-base md:text-lg leading-tight break-words">{opportunity.title}</h4>
-                    <span className={`text-[10px] md:text-xs px-2 py-0.5 rounded-full border self-start sm:self-center whitespace-nowrap ${getBorderColor(opportunity.level)}`}>
-                        {opportunity.impact}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        {opportunity.impact && (
+                            <span className="text-[10px] opacity-50 uppercase font-black tracking-widest leading-none">
+                                {opportunity.impact}
+                            </span>
+                        )}
+                        <span className={`text-[10px] md:text-xs px-2 py-0.5 rounded-full border self-start sm:self-center whitespace-nowrap ${getBorderColor(opportunity.level)} font-bold`}>
+                            {getLevelText(opportunity.level)}
+                        </span>
+                    </div>
                 </div>
                 <p className="text-xs md:text-sm opacity-70 leading-relaxed text-zinc-300 break-words"
                     dangerouslySetInnerHTML={{ __html: opportunity.description }} />

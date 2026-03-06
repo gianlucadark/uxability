@@ -15,44 +15,47 @@ interface LabMetricsProps {
     };
 }
 
+import { useLanguage } from "@/context/LanguageContext";
+
 export default function LabMetrics({ metrics }: LabMetricsProps) {
+    const { t } = useLanguage();
     if (!metrics) return null;
 
     const metricItems: Record<string, { label: string; desc: string; icon: any; title: string }> = {
         lcp: {
-            title: "Largest Contentful Paint",
-            label: "Tempo di Carico",
-            desc: "Misura quanto tempo occorre per caricare l'elemento principale (es. immagine banner). È il momento in cui l'utente sente che la pagina è 'pronta'.",
+            title: t('lcp_title'),
+            label: t('lcp_label'),
+            desc: t('lcp_desc'),
             icon: <Zap size={24} />
         },
         tbt: {
-            title: "Total Blocking Time",
-            label: "Tempo di Blocco",
-            desc: "Somma di tutti i momenti in cui il browser è stato bloccato. Se alto, l'interfaccia non risponde subito ai click o agli scroll.",
+            title: t('tbt_title'),
+            label: t('tbt_label'),
+            desc: t('tbt_desc'),
             icon: <Timer size={24} />
         },
         cls: {
-            title: "Cumulative Layout Shift",
-            label: "Stabilità Visiva",
-            desc: "Valuta se gli elementi 'ballano' durante il caricamento. Più è basso, maggiore è la stabilità e la qualità percepita.",
+            title: t('cls_title'),
+            label: t('cls_label'),
+            desc: t('cls_desc'),
             icon: <Activity size={24} />
         },
         si: {
-            title: "Speed Index",
-            label: "Indice di Velocità",
-            desc: "Esprime in un numero quanto velocemente sono stati visualizzati i contenuti. Più è basso, più la pagina è scattante.",
+            title: t('si_title'),
+            label: t('si_label'),
+            desc: t('si_desc'),
             icon: <Clock size={24} />
         },
         tti: {
-            title: "Time to Interactive",
-            label: "Tempo di Interattività",
-            desc: "Il lasso di tempo necessario affinché la pagina sia completamente utilizzabile e risponda ai comandi senza rallentamenti.",
+            title: t('tti_title'),
+            label: t('tti_label'),
+            desc: t('tti_desc'),
             icon: <MousePointer2 size={24} />
         },
         fcp: {
-            title: "First Contentful Paint",
-            label: "Prima Apparizione",
-            desc: "È il momento preciso in cui compare la prima porzione di contenuto (testo o immagine) sullo schermo.",
+            title: t('fcp_title'),
+            label: t('fcp_label'),
+            desc: t('fcp_desc'),
             icon: <Type size={24} />
         }
     };
@@ -75,10 +78,10 @@ export default function LabMetrics({ metrics }: LabMetricsProps) {
                         <div className="p-2 rounded-xl bg-orange-500/10 text-orange-400">
                             <Thermometer className="w-6 h-6" />
                         </div>
-                        <h3 className="text-3xl font-black font-display text-white">Analisi di Laboratorio</h3>
+                        <h3 className="text-3xl font-black font-display text-white">{t('labMetricsTitle')}</h3>
                     </div>
                     <p className="text-zinc-500 font-medium text-sm max-w-lg">
-                        Test di simulazione eseguiti su una rete mobile 4G controllata. Mostra le prestazioni del sito in condizioni di rete standard non ottimali.
+                        {t('labMetricsSubtitle')}
                     </p>
                 </div>
             </div>
@@ -119,7 +122,7 @@ export default function LabMetrics({ metrics }: LabMetricsProps) {
             <div className="flex justify-center pt-4">
                 <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/5 border border-white/5 text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
                     <HelpCircle size={14} className="text-cyan-400" />
-                    I test di laboratorio sono riproducibili e ideali per il debug.
+                    {t('labMetricsFooter')}
                 </div>
             </div>
         </div>

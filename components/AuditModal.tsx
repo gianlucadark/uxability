@@ -18,7 +18,11 @@ interface AuditModalProps {
     audits: Audit[];
 }
 
+import { useLanguage } from "@/context/LanguageContext";
+
 export default function AuditModal({ isOpen, onClose, title, audits }: AuditModalProps) {
+    const { t } = useLanguage();
+
     if (!isOpen) return null;
 
     const passedAudits = audits.filter(a => a.score === 1 || a.score === null);
@@ -43,7 +47,7 @@ export default function AuditModal({ isOpen, onClose, title, audits }: AuditModa
                     {/* Header */}
                     <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/5">
                         <h3 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
-                            {title} Details
+                            {title} {t('details')}
                         </h3>
                         <button
                             onClick={onClose}
@@ -60,7 +64,7 @@ export default function AuditModal({ isOpen, onClose, title, audits }: AuditModa
                             <div className="space-y-4">
                                 <h4 className="flex items-center gap-2 text-rose-400 font-bold uppercase tracking-wider text-sm">
                                     <XCircle size={18} />
-                                    Test Falliti ({failedAudits.length})
+                                    {t('testFailed')} ({failedAudits.length})
                                 </h4>
                                 <div className="grid gap-3">
                                     {failedAudits.map((audit) => (
@@ -84,7 +88,7 @@ export default function AuditModal({ isOpen, onClose, title, audits }: AuditModa
                         <div className="space-y-4">
                             <h4 className="flex items-center gap-2 text-emerald-400 font-bold uppercase tracking-wider text-sm">
                                 <CheckCircle2 size={18} />
-                                Test Superati ({passedAudits.length})
+                                {t('testPassed')} ({passedAudits.length})
                             </h4>
                             <div className="grid gap-3">
                                 {passedAudits.map((audit) => (

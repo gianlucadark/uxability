@@ -11,7 +11,10 @@ interface SearchPreviewProps {
     };
 }
 
+import { useLanguage } from "@/context/LanguageContext";
+
 export default function SearchPreview({ url, metadata }: SearchPreviewProps) {
+    const { t } = useLanguage();
     if (!metadata) return null;
 
     let displayUrl = "";
@@ -25,7 +28,7 @@ export default function SearchPreview({ url, metadata }: SearchPreviewProps) {
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex items-center gap-3">
-                <h3 className="text-2xl font-bold">Anteprima Search Engine</h3>
+                <h3 className="text-2xl font-bold">{t('searchPreviewTitle')}</h3>
                 <div className="h-px flex-grow bg-white/10"></div>
             </div>
 
@@ -71,9 +74,9 @@ export default function SearchPreview({ url, metadata }: SearchPreviewProps) {
                         <Globe size={18} />
                     </div>
                     <div className="space-y-1">
-                        <p className="text-sm font-bold opacity-90">Ottimizzazione Meta-Tag</p>
+                        <p className="text-sm font-bold opacity-90">{t('metaTagOptimization')}</p>
                         <p className="text-xs opacity-60 leading-relaxed">
-                            Il titolo e la descrizione sono i primi elementi che l'utente vede su Google. Assicurati che siano coerenti con il contenuto della pagina.
+                            {t('metaTagOptimizationDesc')}
                         </p>
                     </div>
                 </div>

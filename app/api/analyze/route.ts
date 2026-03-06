@@ -87,10 +87,11 @@ async function recursiveCrawl(startUrl: string, targetCount: number) {
     return Array.from(candidates).slice(0, 10);
 }
 
-async function analyzeUrl(url: string, apiKey?: string) {
+async function analyzeUrl(url: string, apiKey?: string, lang: string = 'it') {
+    const locale = lang === 'en' ? 'en-US' : 'it';
     const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(
         url
-    )}&category=performance&category=accessibility&category=best-practices&category=seo&locale=it${apiKey ? `&key=${apiKey}` : ""}`;
+    )}&category=performance&category=accessibility&category=best-practices&category=seo&locale=${locale}${apiKey ? `&key=${apiKey}` : ""}`;
 
     const response = await fetch(apiUrl);
     const data = await response.json();
@@ -164,7 +165,7 @@ async function analyzeUrl(url: string, apiKey?: string) {
             title: audit.title,
             description: audit.description,
             score: audit.score,
-            impact: audit.details?.overallSavingsMs ? `${audit.details.overallSavingsMs}ms savings` : "High impact",
+            impact: audit.displayValue || (audit.details?.overallSavingsMs ? `${audit.details.overallSavingsMs}ms` : ""),
             level: audit.score < 0.5 ? "High" : audit.score < 0.9 ? "Medium" : "Low",
         }));
 
@@ -185,7 +186,7 @@ async function analyzeUrl(url: string, apiKey?: string) {
 
 export async function POST(req: Request) {
     try {
-        const { url } = await req.json();
+        const { url, lang } = await req.json();
 
         if (!url) {
             return NextResponse.json({ error: "URL is required" }, { status: 400 });
@@ -194,7 +195,7 @@ export async function POST(req: Request) {
         const apiKey = process.env.PAGESPEED_API_KEY;
 
         // 1. Analyze main URL first
-        const mainResult = await analyzeUrl(url, apiKey);
+        const mainResult = await analyzeUrl(url, apiKey, lang);
         const allResults = [mainResult];
         const analyzedUrls = new Set<string>([normalizeUrl(mainResult.url)]);
 
@@ -209,7 +210,7 @@ export async function POST(req: Request) {
             if (analyzedUrls.has(normLink)) continue;
 
             try {
-                const result = await analyzeUrl(link, apiKey);
+                const result = await analyzeUrl(link, apiKey, lang);
                 const normFinalUrl = normalizeUrl(result.url);
 
                 if (!analyzedUrls.has(normFinalUrl)) {

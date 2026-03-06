@@ -7,7 +7,11 @@ interface ResourceBreakdownProps {
     resources: any[];
 }
 
+import { useLanguage } from "@/context/LanguageContext";
+
 export default function ResourceBreakdown({ resources }: ResourceBreakdownProps) {
+    const { t } = useLanguage();
+
     if (!resources || resources.length === 0) return null;
 
     const formatted = resources
@@ -43,16 +47,16 @@ export default function ResourceBreakdown({ resources }: ResourceBreakdownProps)
                         <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
                             <Wifi className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <h3 className="text-2xl md:text-3xl font-black font-display text-white">Composizione Pesantezza</h3>
+                        <h3 className="text-2xl md:text-3xl font-black font-display text-white">{t('resourceTitle')}</h3>
                     </div>
                     <p className="text-zinc-500 font-medium text-[11px] md:text-xs max-w-lg italic">
-                        Un'analisi dettagliata di ogni byte trasferito. Siti più leggeri si caricano istantaneamente anche su dispositivi mobili limitati.
+                        {t('resourceSubtitle')}
                     </p>
                 </div>
 
                 <div className="flex flex-col items-start md:items-end">
                     <div className="text-4xl md:text-5xl font-black font-mono tracking-tighter text-white">{formatSize(totalSize)}</div>
-                    <div className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-cyan-400">Peso Totale Pagina</div>
+                    <div className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-cyan-400">{t('totalWeight')}</div>
                 </div>
             </div>
 
@@ -62,9 +66,9 @@ export default function ResourceBreakdown({ resources }: ResourceBreakdownProps)
                     <div className="flex justify-between items-center mb-4 md:mb-6">
                         <div className="flex items-center gap-2">
                             <Layers size={16} className="text-blue-400" />
-                            <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-zinc-400">Distribuzione Risorse</span>
+                            <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-zinc-400">{t('resourceBreakdown')}</span>
                         </div>
-                        <div className="text-[9px] md:text-[10px] font-bold opacity-30 uppercase tracking-widest">Dimensioni Proporzionali</div>
+                        <div className="text-[9px] md:text-[10px] font-bold opacity-30 uppercase tracking-widest">{t('size')}</div>
                     </div>
 
                     <div className="h-8 md:h-10 w-full flex rounded-xl md:rounded-2xl overflow-hidden shadow-2xl bg-black/40 border border-white/5">
@@ -83,7 +87,7 @@ export default function ResourceBreakdown({ resources }: ResourceBreakdownProps)
                         {formatted.slice(0, 5).map((res) => (
                             <div key={res.resourceType} className="flex items-center gap-2">
                                 <div className={`w-2.5 h-2.5 rounded-full ${getTypeColor(res.resourceType)}`} />
-                                <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-500">{res.label}</span>
+                                <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-500">{t(res.resourceType) || res.label}</span>
                             </div>
                         ))}
                     </div>
@@ -104,11 +108,11 @@ export default function ResourceBreakdown({ resources }: ResourceBreakdownProps)
                             {res.resourceType === 'script' ? <FileCode size={18} /> :
                                 res.resourceType === 'image' ? <ImageIcon size={18} /> :
                                     res.resourceType === 'stylesheet' ? <FileText size={18} /> : <Layers size={18} />}
-                            <span className="text-[8px] font-black uppercase tracking-widest">{res.requestCount} rich.</span>
+                            <span className="text-[8px] font-black uppercase tracking-widest">{res.requestCount} {t('requests').toLowerCase()}</span>
                         </div>
 
                         <div className="space-y-0.5">
-                            <div className="text-[10px] md:text-xs font-black uppercase tracking-widest text-zinc-500">{res.label}</div>
+                            <div className="text-[10px] md:text-xs font-black uppercase tracking-widest text-zinc-500">{t(res.resourceType) || res.label}</div>
                             <div className="text-2xl md:text-3xl font-black font-mono tracking-tighter text-white">{formatSize(res.transferSize)}</div>
                         </div>
                     </motion.div>

@@ -7,7 +7,11 @@ interface MainThreadBreakdownProps {
     items: any[];
 }
 
+import { useLanguage } from "@/context/LanguageContext";
+
 export default function MainThreadBreakdown({ items }: MainThreadBreakdownProps) {
+    const { t } = useLanguage();
+
     if (!items || items.length === 0) return null;
 
     const totalDuration = items.reduce((acc, curr) => acc + curr.duration, 0);
@@ -45,10 +49,10 @@ export default function MainThreadBreakdown({ items }: MainThreadBreakdownProps)
                         <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400">
                             <Cpu className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <h3 className="text-2xl md:text-3xl font-black font-display text-white">Lavoro Main Thread</h3>
+                        <h3 className="text-2xl md:text-3xl font-black font-display text-white">{t('mainThreadTitle')}</h3>
                     </div>
                     <p className="text-zinc-500 font-medium text-[11px] md:text-xs max-w-lg italic">
-                        Misura quanto tempo il browser impiega per processare il caricamento. Se il processore è occupato, l'interfaccia si blocca.
+                        {t('mainThreadSubtitle')}
                     </p>
                 </div>
 
@@ -101,7 +105,7 @@ export default function MainThreadBreakdown({ items }: MainThreadBreakdownProps)
                                         {getIcon(item.group)}
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-500">{item.groupLabel}</span>
+                                        <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-500">{t(item.group) || item.groupLabel}</span>
                                         <span className="text-lg md:text-xl font-black font-mono tracking-tight text-white">{formatDuration(item.duration)}</span>
                                     </div>
                                 </div>
@@ -110,7 +114,7 @@ export default function MainThreadBreakdown({ items }: MainThreadBreakdownProps)
                         <div className="p-3 md:p-4 rounded-xl bg-orange-500/5 border border-orange-500/10 flex gap-3 items-center">
                             <MousePointer2 size={14} className="text-orange-400 shrink-0" />
                             <p className="text-[9px] md:text-[10px] font-bold text-orange-400/80 uppercase tracking-widest leading-relaxed">
-                                Un Main Thread troppo carico rende impossibile l'interazione fluida per l'utente.
+                                {t('mainThreadSubtitle').split('.')[0]}.
                             </p>
                         </div>
                     </div>
@@ -119,27 +123,27 @@ export default function MainThreadBreakdown({ items }: MainThreadBreakdownProps)
                 {/* Additional Stats - Dynamic Bento Items */}
                 <div className="md:col-span-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                     <div className="glass rounded-[1.5rem] md:rounded-[2rem] p-6 md:p-8 border border-white/5 bg-white/[0.01] flex flex-col items-center justify-center text-center space-y-2">
-                        <div className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-500">Intensità Script</div>
+                        <div className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-500">{t('scriptEvaluation')}</div>
                         <div className="text-3xl md:text-4xl font-black font-mono text-rose-500">
                             {((items.find(i => i.group === 'scriptEvaluation')?.duration || 0) / totalDuration * 100).toFixed(1)}%
                         </div>
-                        <p className="text-[8px] md:text-[9px] font-bold opacity-30 uppercase tracking-tighter">Tempo speso in JS</p>
+                        <p className="text-[8px] md:text-[9px] font-bold opacity-30 uppercase tracking-tighter">{t('otherRendering')}</p>
                     </div>
 
                     <div className="glass rounded-[1.5rem] md:rounded-[2rem] p-6 md:p-8 border border-white/5 bg-white/[0.01] flex flex-col items-center justify-center text-center space-y-2">
-                        <div className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-500">Efficienza Layout</div>
+                        <div className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-500">{t('styleLayout')}</div>
                         <div className="text-3xl md:text-4xl font-black font-mono text-emerald-500">
                             {((items.find(i => i.group === 'layout')?.duration || 0) / totalDuration * 100).toFixed(1)}%
                         </div>
-                        <p className="text-[8px] md:text-[9px] font-bold opacity-30 uppercase tracking-tighter">Rendering Struttura</p>
+                        <p className="text-[8px] md:text-[9px] font-bold opacity-30 uppercase tracking-tighter">{t('rendering')}</p>
                     </div>
 
                     <div className="glass rounded-[1.5rem] md:rounded-[2rem] p-6 md:p-8 border border-white/5 bg-white/[0.01] flex flex-col items-center justify-center text-center space-y-2 sm:col-span-2 md:col-span-1">
-                        <div className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-500">Tempo Totale</div>
+                        <div className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-500">{t('totalWeight')}</div>
                         <div className="text-xl md:text-2xl font-black font-mono text-white">
                             {formatDuration(totalDuration)}
                         </div>
-                        <p className="text-[8px] md:text-[9px] font-bold opacity-30 uppercase tracking-tighter">Operatività Browser</p>
+                        <p className="text-[8px] md:text-[9px] font-bold opacity-30 uppercase tracking-tighter">{t('otherRendering')}</p>
                     </div>
                 </div>
             </div>

@@ -16,6 +16,7 @@ import LabMetrics from "@/components/LabMetrics";
 import AIRecommendation from "@/components/AIRecommendation";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function Home() {
   const [url, setUrl] = useState("");
@@ -24,6 +25,7 @@ export default function Home() {
   const [activeResultIndex, setActiveResultIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { language, t } = useLanguage();
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +35,7 @@ export default function Home() {
     try {
       new URL(url.startsWith('http') ? url : `https://${url}`);
     } catch (e) {
-      setError("Inserisci un URL valido (es. google.com)");
+      setError(t('invalidUrl'));
       return;
     }
 
@@ -47,17 +49,17 @@ export default function Home() {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: formattedUrl }),
+        body: JSON.stringify({ url: formattedUrl, lang: language }),
       });
 
       const data = await response.json();
       if (response.ok) {
         setResults(data.results);
       } else {
-        setError(data.error || "Errore durante l'analisi. Riprova.");
+        setError(data.error || t('analysisError'));
       }
     } catch (err) {
-      setError("Impossibile connettersi al server.");
+      setError(t('connectionError'));
     } finally {
       setLoading(false);
     }
@@ -80,28 +82,28 @@ export default function Home() {
 
       doc.setFontSize(24);
       doc.setTextColor(255);
-      doc.text("UXABILITY ANALYSIS REPORT", 14, 25);
+      doc.text(t('reportTitle'), 14, 25);
 
       doc.setFontSize(10);
       doc.setTextColor(255);
-      doc.text(`Generato il: ${timestamp}`, 170, 15, { align: 'right' });
-      doc.text(`URL Analizzato: ${res.url}`, 14, 33);
+      doc.text(`${t('generatedOn')} ${timestamp}`, 170, 15, { align: 'right' });
+      doc.text(`${t('analyzedUrl')} ${res.url}`, 14, 33);
 
       let currentY = 50;
 
       // --- 1. Global Scores ---
       doc.setFontSize(16);
       doc.setTextColor(0);
-      doc.text("Punteggi Globali", 14, currentY);
+      doc.text(t('globalScores'), 14, currentY);
 
       autoTable(doc, {
         startY: currentY + 5,
-        head: [['Categoria', 'Punteggio']],
+        head: [[t('category'), t('score')]],
         body: [
-          ['Performance', `${res.scores.performance}/100`],
-          ['Accessibilità', `${res.scores.accessibility}/100`],
-          ['Best Practices', `${res.scores.bestPractices}/100`],
-          ['SEO', `${res.scores.seo}/100`],
+          [t('performance'), `${res.scores.performance}/100`],
+          [t('accessibility'), `${res.scores.accessibility}/100`],
+          [t('bestPractices'), `${res.scores.bestPractices}/100`],
+          [t('seo'), `${res.scores.seo}/100`],
         ],
         theme: 'striped',
         headStyles: { fillColor: [34, 211, 238] }
@@ -111,7 +113,7 @@ export default function Home() {
       // --- 2. Core Web Vitals (Esperienza Reale) ---
       if (res.fieldData && res.fieldData.metrics) {
         doc.setFontSize(16);
-        doc.text("Esperienza Utenti Reali (Core Web Vitals)", 14, currentY);
+        doc.text(t('realUserExperience'), 14, currentY);
 
         const cwvs = Object.entries(res.fieldData.metrics).map(([key, val]: [string, any]) => [
           key.replace(/_/g, ' '),
@@ -121,7 +123,7 @@ export default function Home() {
 
         autoTable(doc, {
           startY: currentY + 5,
-          head: [['Metrica', 'Valore', 'Stato']],
+          head: [[t('metric'), t('value'), t('status')]],
           body: cwvs,
           theme: 'grid',
           headStyles: { fillColor: [16, 185, 129] } // Emerald-500
@@ -131,19 +133,19 @@ export default function Home() {
 
       // --- 3. Resource Breakdown ---
       doc.setFontSize(16);
-      doc.text("Composizione Pesantezza Pagina", 14, currentY);
+      doc.text(t('pageWeight'), 14, currentY);
 
       const resources = res.resourceSummary
         .filter((r: any) => r.resourceType !== 'total')
         .map((r: any) => [
-          r.label,
+          t(r.resourceType) || r.label,
           r.requestCount,
           r.transferSize > 1024 * 1024 ? `${(r.transferSize / (1024 * 1024)).toFixed(2)} MB` : `${(r.transferSize / 1024).toFixed(2)} KB`
         ]);
 
       autoTable(doc, {
         startY: currentY + 5,
-        head: [['Tipo Risorsa', 'Richieste', 'Dimensione']],
+        head: [[t('resourceType'), t('requests'), t('size')]],
         body: resources,
         theme: 'striped',
         headStyles: { fillColor: [59, 130, 246] } // Blue-500
@@ -157,17 +159,17 @@ export default function Home() {
       // --- 4. Suggestions and Criticalities ---
       doc.setFontSize(16);
       doc.setTextColor(0);
-      doc.text("Priorità di Intervento e Migliorie", 14, currentY);
+      doc.text(t('interventionPriority'), 14, currentY);
 
       const oppBody = res.opportunities.map((o: any) => [
         o.title,
-        o.level,
+        t(o.level.toLowerCase()) || o.level,
         o.impact
       ]);
 
       autoTable(doc, {
         startY: currentY + 5,
-        head: [['Problema Rilevato', 'Gravità', 'Impatto Stimato']],
+        head: [[t('detectedProblem'), t('severity'), t('estimatedImpact')]],
         body: oppBody,
         theme: 'grid',
         headStyles: { fillColor: [244, 63, 94] } // Rose-500
@@ -177,17 +179,15 @@ export default function Home() {
 
       // --- Summary Note ---
       doc.setFontSize(12);
-      doc.text("Conclusione Tecnica:", 14, currentY);
+      doc.text(t('technicalConclusion'), 14, currentY);
       doc.setFontSize(10);
       doc.setTextColor(80);
-      const conclusion = `Il sito web analizzato presenta un punteggio di performance di ${res.scores.performance}/100. ` +
-        `Si consiglia di focalizzarsi prioritariamente sulle criticità contrassegnate come 'High' per migliorare l'esperienza utente ` +
-        `e l'indicizzazione sui motori di ricerca.`;
+      const conclusion = t('conclusionText', res.scores.performance);
       const splitText = doc.splitTextToSize(conclusion, 180);
       doc.text(splitText, 14, currentY + 7);
     });
 
-    const filename = `Report_Completo_UXAbility_${new URL(results[0].url).hostname}.pdf`;
+    const filename = `UXAbility_Report_${new URL(results[0].url).hostname}.pdf`;
     doc.save(filename);
   };
 
@@ -210,7 +210,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             className="text-5xl md:text-7xl font-extrabold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-cyan-200 to-blue-400"
           >
-            UXABILITY
+            {t('heroTitle')}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -218,8 +218,7 @@ export default function Home() {
             transition={{ delay: 0.1 }}
             className="text-lg md:text-xl opacity-70 max-w-2xl mx-auto mb-10"
           >
-            Analizza il tuo sito web con un crawl intelligente. Ricevi report PDF completi su velocità,
-            SEO e come migliorare.
+            {t('heroSubtitle')}
           </motion.p>
 
           <motion.form
@@ -234,7 +233,7 @@ export default function Home() {
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="Inserisci l'URL (es. vercel.com)"
+                placeholder={t('inputPlaceholder')}
                 className="w-full h-14 md:h-16 pl-12 md:pl-14 pr-14 md:pr-40 rounded-2xl glass outline-none border border-white/10 focus:border-cyan-400/50 transition-all text-base md:text-lg placeholder:opacity-40"
               />
               <Search className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 opacity-40 group-focus-within:opacity-100 transition-opacity" size={20} />
@@ -247,7 +246,7 @@ export default function Home() {
                   <Loader2 className="animate-spin" size={18} />
                 ) : (
                   <>
-                    <span className="hidden md:inline">Analizza Sito</span>
+                    <span className="hidden md:inline">{t('analyzeButton')}</span>
                     <ArrowRight size={18} />
                   </>
                 )}
@@ -277,7 +276,7 @@ export default function Home() {
                   animate={{ opacity: 1 }}
                   className="absolute -bottom-8 left-0 right-0 text-center text-xs font-medium opacity-50 animate-pulse pointer-events-none"
                 >
-                  Crawl intelligente in corso: Analizzando 5 pagine...
+                  {t('crawlingText')}
                 </motion.p>
               )}
             </AnimatePresence>
@@ -311,7 +310,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h2 className="text-xl font-bold truncate max-w-[200px] md:max-w-xs">
-                      {new URL(currentResult.url).pathname === '/' ? 'Home Page' : new URL(currentResult.url).pathname}
+                      {new URL(currentResult.url).pathname === '/' ? t('homePage') : new URL(currentResult.url).pathname}
                     </h2>
                     <p className="opacity-50 text-xs truncate max-w-[200px] md:max-w-xs">{currentResult.url}</p>
                   </div>
@@ -323,11 +322,11 @@ export default function Home() {
                     className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-sm font-semibold"
                   >
                     <FileText size={18} className="text-cyan-400" />
-                    Esporta PDF
+                    {t('exportPdf')}
                   </button>
                   <div className="flex items-center gap-2 text-emerald-400 bg-emerald-400/10 px-4 py-2 rounded-full text-sm font-bold">
                     <CheckCircle2 size={18} />
-                    <span>Analizzato</span>
+                    <span>{t('analyzed')}</span>
                   </div>
                 </div>
               </div>
@@ -351,7 +350,7 @@ export default function Home() {
                         {(() => {
                           try {
                             const path = new URL(res.url).pathname;
-                            if (path === '/') return "Home Page";
+                            if (path === '/') return t('homePage');
                             const parts = path.split('/').filter(Boolean);
                             return parts.length > 0 ? `/${parts[parts.length - 1]}` : path;
                           } catch (e) {
@@ -368,25 +367,25 @@ export default function Home() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <ScoreCircle
                   score={currentResult.scores.performance}
-                  label="Performance"
+                  label={t('performance')}
                   delay={0.2}
                   onClick={() => setSelectedCategory("performance")}
                 />
                 <ScoreCircle
                   score={currentResult.scores.accessibility}
-                  label="Accessibility"
+                  label={t('accessibility')}
                   delay={0.3}
                   onClick={() => setSelectedCategory("accessibility")}
                 />
                 <ScoreCircle
                   score={currentResult.scores.bestPractices}
-                  label="Best Practices"
+                  label={t('bestPractices')}
                   delay={0.4}
                   onClick={() => setSelectedCategory("bestPractices")}
                 />
                 <ScoreCircle
                   score={currentResult.scores.seo}
-                  label="SEO"
+                  label={t('seo')}
                   delay={0.5}
                   onClick={() => setSelectedCategory("seo")}
                 />
@@ -422,7 +421,7 @@ export default function Home() {
               {/* 4. Priorities & Opportunities */}
               <div className="space-y-12">
                 <div className="flex items-center gap-3">
-                  <h3 className="text-2xl font-bold">Criticità e Migliorie</h3>
+                  <h3 className="text-2xl font-bold">{t('criticalities')}</h3>
                   <div className="h-px flex-grow bg-white/10"></div>
                 </div>
 
@@ -433,7 +432,7 @@ export default function Home() {
                     ))
                   ) : (
                     <div className="p-8 glass rounded-2xl border border-white/10 text-center opacity-50">
-                      Nessuna criticità rilevante trovata per questa pagina. Ottimo lavoro!
+                      {t('noCriticalities')}
                     </div>
                   )}
                 </div>

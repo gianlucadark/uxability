@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { LanguageProvider } from "@/context/LanguageContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -31,9 +33,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
 
-        <Script
+        {/* <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-XE0CH7MY4Q"
           strategy="afterInteractive"
         />
@@ -45,7 +49,7 @@ export default function RootLayout({
             gtag('js', new Date());
             gtag('config', 'G-XE0CH7MY4Q');
           `}
-        </Script>
+        </Script> */}
 
       </body>
     </html>

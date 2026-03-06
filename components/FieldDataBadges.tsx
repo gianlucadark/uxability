@@ -7,7 +7,11 @@ interface FieldDataBadgesProps {
     fieldData: any;
 }
 
+import { useLanguage } from "@/context/LanguageContext";
+
 export default function FieldDataBadges({ fieldData }: FieldDataBadgesProps) {
+    const { t } = useLanguage();
+
     if (!fieldData || !fieldData.metrics) {
         return (
             <div className="glass p-12 rounded-[2.5rem] border border-white/5 animate-in fade-in slide-in-from-bottom-4 flex flex-col items-center justify-center text-center space-y-6 bg-white/[0.01]">
@@ -15,9 +19,9 @@ export default function FieldDataBadges({ fieldData }: FieldDataBadgesProps) {
                     <Info size={40} />
                 </div>
                 <div className="space-y-2">
-                    <h3 className="text-2xl font-bold opacity-80">Dati Utenti Reali non disponibili</h3>
+                    <h3 className="text-2xl font-bold opacity-80">{t('fieldDataNotAvailable')}</h3>
                     <p className="text-sm opacity-40 max-w-lg leading-relaxed">
-                        Google Chrome User Experience Report (CrUX) non dispone ancora di sufficiente traffico per questo URL negli ultimi 28 giorni per generare un report statistico affidabile.
+                        {t('fieldDataNotAvailableDesc')}
                     </p>
                 </div>
             </div>
@@ -27,9 +31,9 @@ export default function FieldDataBadges({ fieldData }: FieldDataBadgesProps) {
     const metrics = fieldData.metrics;
 
     const getStatusText = (category: string) => {
-        if (category === "FAST" || category === "GOOD") return "Eccellente";
-        if (category === "AVERAGE" || category === "NEEDS_IMPROVEMENT") return "Migliorabile";
-        return "Critico";
+        if (category === "FAST" || category === "GOOD") return t('statusExcellent');
+        if (category === "AVERAGE" || category === "NEEDS_IMPROVEMENT") return t('statusNeedsImprovement');
+        return t('statusCritical');
     };
 
     const getStatusColor = (category: string) => {
@@ -40,38 +44,38 @@ export default function FieldDataBadges({ fieldData }: FieldDataBadgesProps) {
 
     const metricInfo: Record<string, { label: string; desc: string; icon: any }> = {
         "LARGEST_CONTENTFUL_PAINT_MS": {
-            label: "Visualizz. Contenuto (LCP)",
-            desc: "L'istante in cui l'utente vede l'elemento principale (hero image, titolo). È fondamentale per la percezione di velocità.",
+            label: t('LCP_field'),
+            desc: t('LCP_field_desc'),
             icon: <Zap size={20} />
         },
         "FIRST_INPUT_DELAY_MS": {
-            label: "Reattività al Click (FID)",
-            desc: "Il tempo che intercorre tra l'interazione (es. click) e la risposta del browser. Influenza quanto il sito sembra 'scattante'.",
+            label: t('FID_field'),
+            desc: t('FID_field_desc'),
             icon: <Clock size={20} />
         },
         "CUMULATIVE_LAYOUT_SHIFT_SCORE": {
-            label: "Stabilità Visiva (CLS)",
-            desc: "Misura se gli elementi si muovono mentre la pagina carica. Evita che l'utente clicchi il pulsante sbagliato per errore.",
+            label: t('CLS_field'),
+            desc: t('CLS_field_desc'),
             icon: <Activity size={20} />
         },
         "INTERACTION_TO_NEXT_PAINT": {
-            label: "Fluidità Interazione (INP)",
-            desc: "Valuta quanto il sito risponde prontamente ad ogni azione compiuta dall'utente durante l'intera permanenza.",
+            label: t('INP_field'),
+            desc: t('INP_field_desc'),
             icon: <MousePointer2 size={20} />
         },
         "EXPERIMENTAL_INTERACTION_TO_NEXT_PAINT": {
-            label: "Fluidità Interazione (INP)",
-            desc: "Valuta quanto il sito risponde prontamente ad ogni azione compiuta dall'utente durante l'intera permanenza.",
+            label: t('INP_field'),
+            desc: t('INP_field_desc'),
             icon: <MousePointer2 size={20} />
         },
         "FIRST_CONTENTFUL_PAINT_MS": {
-            label: "Prima Apparizione (FCP)",
-            desc: "Misura il tempo impiegato per visualizzare il primo bit di contenuto (testo o immagine) sullo schermo.",
+            label: t('FCP_field'),
+            desc: t('FCP_field_desc'),
             icon: <Type size={20} />
         },
         "EXPERIMENTAL_TIME_TO_FIRST_BYTE_MS": {
-            label: "Risposta Server (TTFB)",
-            desc: "Il tempo che il server impiega per inviare il primo byte di dati in risposta a una richiesta.",
+            label: t('TTFB_field'),
+            desc: t('TTFB_field_desc'),
             icon: <Database size={20} />
         }
     };
@@ -100,22 +104,22 @@ export default function FieldDataBadges({ fieldData }: FieldDataBadgesProps) {
                         <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400">
                             <Globe className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <h3 className="text-2xl md:text-3xl font-black font-display text-white">Core Web Vitals</h3>
+                        <h3 className="text-2xl md:text-3xl font-black font-display text-white">{t('fieldDataTitle')}</h3>
                     </div>
                     <p className="text-zinc-500 font-medium max-w-xl text-xs md:text-sm italic">
-                        Questi dati riflettono l'esperienza attuale dei tuoi navigatori reali (Chrome UX Report). Google li utilizza per il posizionamento SEO.
+                        {t('fieldDataSubtitle')}
                     </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 md:gap-4 bg-white/5 border border-white/10 px-4 md:px-6 py-2.5 md:py-3 rounded-2xl shadow-inner">
                     <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-emerald-400">
-                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" /> Veloce
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" /> {t('fast')}
                     </div>
                     <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-amber-400">
-                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" /> Normale
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" /> {t('normal')}
                     </div>
                     <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-rose-400">
-                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" /> Lento
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" /> {t('slow')}
                     </div>
                 </div>
             </div>
@@ -182,9 +186,9 @@ export default function FieldDataBadges({ fieldData }: FieldDataBadgesProps) {
                         )}
                     </div>
                     <div className="space-y-2">
-                        <h4 className="text-xl font-bold">Verdetto Esperienza Utente</h4>
+                        <h4 className="text-xl font-bold">{t('verdictTitle')}</h4>
                         <p className="text-zinc-500 text-sm leading-snug">
-                            Basandosi sugli utenti reali, il tuo sito <span className={`font-black uppercase tracking-widest ${fieldData.overall_category === "FAST" ? "text-emerald-400" : "text-rose-400"}`}>{fieldData.overall_category === "FAST" ? "supera" : "non supera"}</span> i parametri di qualità imposti da Google per una navigazione eccellente.
+                            {t('verdictPassed', fieldData.overall_category === "FAST")}
                         </p>
                     </div>
                 </div>
