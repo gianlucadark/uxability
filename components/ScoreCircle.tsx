@@ -28,27 +28,25 @@ export default function ScoreCircle({ score, label, delay = 0, onClick }: ScoreC
 
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay }}
-            whileHover={{ y: -5, backgroundColor: "rgba(255,255,255,0.06)" }}
-            whileTap={{ scale: 0.98 }}
+            transition={{ duration: 0.3, delay }}
             onClick={onClick}
-            className="flex flex-col items-center gap-4 glass p-6 rounded-2xl w-full cursor-pointer transition-colors"
+            className="flex flex-col items-center justify-center gap-4 card p-6 w-full cursor-pointer hover:-translate-y-1"
         >
-            <div className="relative w-32 h-32 flex items-center justify-center">
+            <div className="relative w-28 h-28 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90">
                     <circle
-                        cx="64"
-                        cy="64"
+                        cx="56"
+                        cy="56"
                         r={radius}
                         fill="transparent"
-                        stroke="rgba(255,255,255,0.1)"
+                        stroke="#334155"
                         strokeWidth="8"
                     />
                     <motion.circle
-                        cx="64"
-                        cy="64"
+                        cx="56"
+                        cy="56"
                         r={radius}
                         fill="transparent"
                         stroke="currentColor"
@@ -56,16 +54,18 @@ export default function ScoreCircle({ score, label, delay = 0, onClick }: ScoreC
                         strokeDasharray={circumference}
                         initial={{ strokeDashoffset: circumference }}
                         animate={{ strokeDashoffset }}
-                        transition={{ duration: 1.5, ease: "easeOut", delay: delay + 0.3 }}
+                        transition={{ duration: 1.5, ease: "easeOut", delay: delay + 0.1 }}
                         className={getColor(score)}
                         strokeLinecap="round"
                     />
                 </svg>
-                <span className={`absolute text-2xl font-bold ${getTextColor(score)}`}>
-                    {score}
-                </span>
+                <div className="absolute flex flex-col items-center justify-center">
+                    <span className={`text-3xl font-bold ${getTextColor(score)}`}>
+                        {score}
+                    </span>
+                </div>
             </div>
-            <span className="text-sm font-medium uppercase tracking-wider opacity-70">{label}</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">{label}</span>
         </motion.div>
     );
 }

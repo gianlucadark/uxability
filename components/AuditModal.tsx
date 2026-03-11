@@ -30,83 +30,85 @@ export default function AuditModal({ isOpen, onClose, title, audits }: AuditModa
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={onClose}
-                    className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                />
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    className="relative w-full max-w-2xl max-h-[80vh] overflow-hidden glass-dark rounded-3xl flex flex-col shadow-2xl border border-white/20"
-                >
-                    {/* Header */}
-                    <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/5">
-                        <h3 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
-                            {title} {t('details')}
-                        </h3>
-                        <button
-                            onClick={onClose}
-                            className="p-2 rounded-full hover:bg-white/10 transition-colors"
-                        >
-                            <X size={24} />
-                        </button>
-                    </div>
+            {isOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={onClose}
+                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                    />
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                        className="relative w-full max-w-2xl max-h-[80vh] overflow-hidden bg-[#1e293b] rounded-2xl flex flex-col shadow-2xl border border-[#334155]"
+                    >
+                        {/* Header */}
+                        <div className="px-6 py-5 border-b border-[#334155] flex items-center justify-between bg-[#0f172a]">
+                            <h3 className="text-xl font-bold text-white">
+                                {title} {t('details')}
+                            </h3>
+                            <button
+                                onClick={onClose}
+                                className="p-2 rounded-lg hover:bg-white/5 transition-colors text-slate-400 hover:text-white"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
 
-                    {/* Content */}
-                    <div className="overflow-y-auto p-6 space-y-8 custom-scrollbar">
-                        {/* Failed Audits */}
-                        {failedAudits.length > 0 && (
+                        {/* Content */}
+                        <div className="overflow-y-auto p-6 space-y-8 custom-scrollbar bg-[#1e293b]">
+                            {/* Failed Audits */}
+                            {failedAudits.length > 0 && (
+                                <div className="space-y-4">
+                                    <h4 className="flex items-center gap-2 text-rose-500 font-bold uppercase tracking-widest text-[10px]">
+                                        <XCircle size={16} />
+                                        {t('testFailed')} ({failedAudits.length})
+                                    </h4>
+                                    <div className="grid gap-3">
+                                        {failedAudits.map((audit, i) => (
+                                            <div key={`${audit.id}-${i}`} className="p-5 rounded-xl bg-[#0f172a] border border-rose-900/20">
+                                                <div className="flex items-start justify-between gap-4 mb-2">
+                                                    <span className="font-bold text-white text-sm">{audit.title}</span>
+                                                    {audit.displayValue && (
+                                                        <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/10 text-rose-500 font-bold whitespace-nowrap">
+                                                            {audit.displayValue}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-slate-400 leading-relaxed" dangerouslySetInnerHTML={{ __html: audit.description }} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Passed Audits */}
                             <div className="space-y-4">
-                                <h4 className="flex items-center gap-2 text-rose-400 font-bold uppercase tracking-wider text-sm">
-                                    <XCircle size={18} />
-                                    {t('testFailed')} ({failedAudits.length})
+                                <h4 className="flex items-center gap-2 text-emerald-500 font-bold uppercase tracking-widest text-[10px]">
+                                    <CheckCircle2 size={16} />
+                                    {t('testPassed')} ({passedAudits.length})
                                 </h4>
                                 <div className="grid gap-3">
-                                    {failedAudits.map((audit, i) => (
-                                        <div key={`${audit.id}-${i}`} className="p-4 rounded-xl bg-rose-500/5 border border-rose-500/20">
+                                    {passedAudits.map((audit, i) => (
+                                        <div key={`${audit.id}-${i}`} className="p-5 rounded-xl bg-[#0f172a] border border-emerald-900/20">
                                             <div className="flex items-start justify-between gap-4 mb-2">
-                                                <span className="font-semibold">{audit.title}</span>
-                                                {audit.displayValue && (
-                                                    <span className="text-xs px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 whitespace-nowrap">
-                                                        {audit.displayValue}
-                                                    </span>
-                                                )}
+                                                <span className="font-bold text-white/90 text-sm">{audit.title}</span>
                                             </div>
-                                            <p className="text-sm opacity-60 leading-relaxed" dangerouslySetInnerHTML={{ __html: audit.description }} />
+                                            {audit.displayValue && (
+                                                <div className="text-[10px] text-emerald-500/60 font-bold mb-2 uppercase">{audit.displayValue}</div>
+                                            )}
+                                            <p className="text-xs text-slate-500 leading-relaxed" dangerouslySetInnerHTML={{ __html: audit.description }} />
                                         </div>
                                     ))}
                                 </div>
                             </div>
-                        )}
-
-                        {/* Passed Audits */}
-                        <div className="space-y-4">
-                            <h4 className="flex items-center gap-2 text-emerald-400 font-bold uppercase tracking-wider text-sm">
-                                <CheckCircle2 size={18} />
-                                {t('testPassed')} ({passedAudits.length})
-                            </h4>
-                            <div className="grid gap-3">
-                                {passedAudits.map((audit, i) => (
-                                    <div key={`${audit.id}-${i}`} className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
-                                        <div className="flex items-start justify-between gap-4 mb-1">
-                                            <span className="font-semibold opacity-90">{audit.title}</span>
-                                        </div>
-                                        {audit.displayValue && (
-                                            <div className="text-xs text-emerald-400/60 mb-2">{audit.displayValue}</div>
-                                        )}
-                                        <p className="text-sm opacity-40 leading-relaxed" dangerouslySetInnerHTML={{ __html: audit.description }} />
-                                    </div>
-                                ))}
-                            </div>
                         </div>
-                    </div>
-                </motion.div>
-            </div>
+                    </motion.div>
+                </div>
+            )}
         </AnimatePresence>
     );
 }

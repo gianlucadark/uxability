@@ -184,6 +184,7 @@ export const translations = {
         rageDesc_medium: "Qualche piccolo rallentamento o spostamento di layout inizia a infastidire.",
         rageDesc_high: "L'attesa è troppa o la pagina 'balla'. Rischio abbandono elevato.",
         rageDesc_extreme: "Esperienza pessima. L'utente probabilmente chiude la tab prima che carichi.",
+        frustrationDesc: "Questa metrica correla la stabilità visiva e il ritardo di input per stimare la soddisfazione dell'utente.",
 
         // Social Preview
         socialPreviewTitle: "Social Share Preview",
@@ -376,6 +377,7 @@ export const translations = {
         rageDesc_medium: "Some small slowdowns or layout shifts are starting to annoy.",
         rageDesc_high: "The wait is too long or the page 'jumps'. High risk of abandonment.",
         rageDesc_extreme: "Terrible experience. The user probably closes the tab before it loads.",
+        frustrationDesc: "This metric correlates visual stability and input lag to estimate user satisfaction.",
 
         // Social Preview
         socialPreviewTitle: "Social Share Preview",

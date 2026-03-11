@@ -39,30 +39,27 @@ export default function OpportunityCard({ opportunity, index }: { opportunity: O
     };
 
     return (
-        <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4, delay: 0.8 + index * 0.1 }}
-            className={`glass p-4 md:p-5 rounded-xl border-l-4 ${getBorderColor(opportunity.level)} flex flex-col sm:flex-row gap-3 md:gap-4`}
+        <div
+            className={`card p-5 border-l-4 ${opportunity.level === 'High' ? 'border-l-rose-500' : opportunity.level === 'Medium' ? 'border-l-amber-500' : 'border-l-sky-500'} flex flex-col sm:flex-row gap-4 mb-3`}
         >
             <div className="mt-1 shrink-0">{getIcon(opportunity.level)}</div>
             <div className="flex-grow min-w-0">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                    <h4 className="font-semibold text-base md:text-lg leading-tight break-words">{opportunity.title}</h4>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                    <h4 className="font-bold text-lg leading-tight text-white">{opportunity.title}</h4>
                     <div className="flex items-center gap-2">
                         {opportunity.impact && (
-                            <span className="text-[10px] opacity-50 uppercase font-black tracking-widest leading-none">
+                            <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">
                                 {opportunity.impact}
                             </span>
                         )}
-                        <span className={`text-[10px] md:text-xs px-2 py-0.5 rounded-full border self-start sm:self-center whitespace-nowrap ${getBorderColor(opportunity.level)} font-bold`}>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-md border ${opportunity.level === 'High' ? 'border-rose-500/20 text-rose-500 bg-rose-500/5' : opportunity.level === 'Medium' ? 'border-amber-500/20 text-amber-500 bg-amber-500/5' : 'border-indigo-500/20 text-indigo-500 bg-indigo-500/5'} font-bold`}>
                             {getLevelText(opportunity.level)}
                         </span>
                     </div>
                 </div>
-                <p className="text-xs md:text-sm opacity-70 leading-relaxed text-zinc-300 break-words"
+                <p className="text-sm text-zinc-400 leading-relaxed break-words"
                     dangerouslySetInnerHTML={{ __html: opportunity.description }} />
             </div>
-        </motion.div>
+        </div>
     );
 }

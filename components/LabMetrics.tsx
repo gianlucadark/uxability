@@ -71,56 +71,48 @@ export default function LabMetrics({ metrics }: LabMetricsProps) {
         }));
 
     return (
-        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-orange-500/10 text-orange-400">
-                            <Thermometer className="w-6 h-6" />
+                        <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-white">
+                            <Thermometer className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <h3 className="text-3xl font-black font-display text-white">{t('labMetricsTitle')}</h3>
+                        <h3 className="text-xl md:text-2xl font-bold text-white">{t('labMetricsTitle')}</h3>
                     </div>
-                    <p className="text-zinc-500 font-medium text-sm max-w-lg">
+                    <p className="text-slate-500 font-medium text-xs md:text-sm">
                         {t('labMetricsSubtitle')}
                     </p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {items.map((item, i) => (
-                    <motion.div
+                    <div
                         key={`${item.key}-${i}`}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: i * 0.1 }}
-                        className="group flex flex-col p-6 md:p-8 glass rounded-[2rem] md:rounded-[2.5rem] border border-white/5 bg-gradient-to-br from-white/[0.03] to-white/[0.01] hover:bg-white/[0.07] transition-all duration-500"
+                        className="card p-6 flex flex-col justify-between"
                     >
-                        <div className="flex items-center justify-between mb-6 md:mb-8">
-                            <div className="p-2.5 md:p-3 rounded-2xl bg-black/20 text-cyan-400 group-hover:scale-110 group-hover:bg-cyan-400/10 transition-all duration-500 shadow-xl shadow-black/10">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="p-2 rounded-md bg-[#020617] text-sky-400">
                                 {item.icon}
                             </div>
-                            <div className="text-[10px] font-black uppercase tracking-widest opacity-20 group-hover:opacity-100 transition-opacity">Info</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{item.title}</div>
                         </div>
 
-                        <div className="space-y-1 mb-4 md:mb-6">
-                            <div className="text-xs md:text-sm font-black uppercase tracking-widest text-zinc-400">{item.label}</div>
-                            <div className="text-3xl md:text-4xl font-black font-mono tracking-tighter text-white transition-transform group-hover:translate-x-1 duration-500">
-                                {item.value}
-                            </div>
+                        <div className="space-y-1 mb-4">
+                            <h4 className="text-2xl md:text-3xl font-bold tracking-tight text-white">{item.value}</h4>
+                            <div className="text-xs font-semibold text-slate-400">{item.label}</div>
                         </div>
 
-                        <div className="pt-4 md:pt-6 border-t border-white/5 mt-auto">
-                            <h5 className="text-[10px] md:text-[11px] font-black uppercase tracking-tighter text-white mb-2 opacity-60">{item.title}</h5>
-                            <p className="text-[11px] md:text-xs text-zinc-500 leading-relaxed font-medium">
-                                {item.desc}
-                            </p>
-                        </div>
-                    </motion.div>
+                        <p className="text-xs text-slate-500 leading-relaxed pt-4 border-t border-[#1e293b]">
+                            {item.desc}
+                        </p>
+                    </div>
                 ))}
             </div>
 
             <div className="flex justify-center pt-4">
-                <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/5 border border-white/5 text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/5 border border-white/5 text-[10px] text-slate-500 font-bold uppercase tracking-widest">
                     <HelpCircle size={14} className="text-cyan-400" />
                     {t('labMetricsFooter')}
                 </div>

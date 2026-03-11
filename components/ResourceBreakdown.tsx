@@ -40,54 +40,51 @@ export default function ResourceBreakdown({ resources }: ResourceBreakdownProps)
     };
 
     return (
-        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-4">
-                <div className="space-y-1">
+        <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
+                        <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-white">
                             <Wifi className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <h3 className="text-2xl md:text-3xl font-black font-display text-white">{t('resourceTitle')}</h3>
+                        <h3 className="text-xl md:text-2xl font-bold text-white">{t('resourceTitle')}</h3>
                     </div>
-                    <p className="text-zinc-500 font-medium text-[11px] md:text-xs max-w-lg italic">
+                    <p className="text-slate-400 font-medium text-xs md:text-sm">
                         {t('resourceSubtitle')}
                     </p>
                 </div>
 
                 <div className="flex flex-col items-start md:items-end">
-                    <div className="text-4xl md:text-5xl font-black font-mono tracking-tighter text-white">{formatSize(totalSize)}</div>
-                    <div className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-cyan-400">{t('totalWeight')}</div>
+                    <div className="text-3xl md:text-4xl font-bold tracking-tight text-white">{formatSize(totalSize)}</div>
+                    <div className="text-[10px] uppercase font-bold tracking-widest text-[#94a3b8] mt-1">{t('totalWeight')}</div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 auto-rows-auto md:auto-rows-[160px]">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                 {/* Main Progress Bar Card - Span Full Width */}
-                <div className="md:col-span-12 glass rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 border border-white/5 flex flex-col justify-center bg-white/[0.02]">
-                    <div className="flex justify-between items-center mb-4 md:mb-6">
+                <div className="md:col-span-12 card p-6 md:p-8 flex flex-col justify-center">
+                    <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-2">
-                            <Layers size={16} className="text-blue-400" />
-                            <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-zinc-400">{t('resourceBreakdown')}</span>
+                            <Layers size={16} className="text-[#94a3b8]" />
+                            <span className="text-xs font-bold uppercase tracking-widest text-slate-500">{t('resourceBreakdown')}</span>
                         </div>
-                        <div className="text-[9px] md:text-[10px] font-bold opacity-30 uppercase tracking-widest">{t('size')}</div>
                     </div>
 
-                    <div className="h-8 md:h-10 w-full flex rounded-xl md:rounded-2xl overflow-hidden shadow-2xl bg-black/40 border border-white/5">
+                    <div className="h-4 md:h-6 w-full flex rounded-full overflow-hidden bg-[#0f172a]">
                         {formatted.map((res, i) => (
-                            <motion.div
+                            <div
                                 key={`${res.resourceType}-${i}`}
-                                initial={{ width: 0 }}
-                                animate={{ width: `${(res.transferSize / totalSize) * 100}%` }}
-                                transition={{ delay: i * 0.1, duration: 1.5, ease: "circOut" }}
+                                style={{ width: `${(res.transferSize / totalSize) * 100}%` }}
                                 className={`h-full relative group cursor-help transition-all duration-300 hover:brightness-125 ${getTypeColor(res.resourceType)}`}
                             />
                         ))}
                     </div>
 
-                    <div className="flex flex-wrap gap-x-6 gap-y-3 mt-4 md:mt-6">
+                    <div className="flex flex-wrap gap-x-6 gap-y-3 mt-6">
                         {formatted.slice(0, 5).map((res, i) => (
                             <div key={`${res.resourceType}-label-${i}`} className="flex items-center gap-2">
                                 <div className={`w-2.5 h-2.5 rounded-full ${getTypeColor(res.resourceType)}`} />
-                                <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-500">{t(res.resourceType) || res.label}</span>
+                                <span className="text-[10px] md:text-[11px] font-semibold uppercase tracking-widest text-slate-400">{t(res.resourceType) || res.label}</span>
                             </div>
                         ))}
                     </div>
@@ -95,31 +92,27 @@ export default function ResourceBreakdown({ resources }: ResourceBreakdownProps)
 
                 {/* Individual Type Cards - Bento Style */}
                 {formatted.slice(0, 4).map((res, i) => (
-                    <motion.div
+                    <div
                         key={`${res.resourceType}-card-${i}`}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.5 + i * 0.1 }}
-                        className="md:col-span-3 glass rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 border border-white/5 flex flex-col justify-between hover:bg-white/[0.04] transition-all duration-500 overflow-hidden relative min-h-[140px]"
+                        className="md:col-span-3 card p-5 border border-[#334155] flex flex-col justify-between min-h-[120px]"
                     >
-                        <div className={`absolute -right-10 -bottom-10 w-24 h-24 blur-[40px] opacity-10 ${getTypeColor(res.resourceType)}`} />
-
-                        <div className="flex justify-between items-start opacity-40">
+                        <div className="flex justify-between items-start text-slate-500">
                             {res.resourceType === 'script' ? <FileCode size={18} /> :
                                 res.resourceType === 'image' ? <ImageIcon size={18} /> :
                                     res.resourceType === 'stylesheet' ? <FileText size={18} /> : <Layers size={18} />}
-                            <span className="text-[8px] font-black uppercase tracking-widest">{res.requestCount} {t('requests').toLowerCase()}</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-[#64748b]">{res.requestCount} {t('requests').toLowerCase()}</span>
                         </div>
 
-                        <div className="space-y-0.5">
-                            <div className="text-[10px] md:text-xs font-black uppercase tracking-widest text-zinc-500">{t(res.resourceType) || res.label}</div>
-                            <div className="text-2xl md:text-3xl font-black font-mono tracking-tighter text-white">{formatSize(res.transferSize)}</div>
+                        <div className="space-y-1">
+                            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t(res.resourceType) || res.label}</div>
+                            <div className="text-xl font-bold tracking-tight text-white">{formatSize(res.transferSize)}</div>
                         </div>
-                    </motion.div>
+                    </div>
                 ))}
+
+
+
             </div>
         </div>
     );
 }
-
-import { Layout } from "lucide-react";

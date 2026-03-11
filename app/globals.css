@@ -1,62 +1,73 @@
 @import "tailwindcss";
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-}
-
 :root {
-  --background: #0a192f;
-  --foreground: #ffffff;
+  --background: #0f172a;
+  /* Celeste Deep Background */
+  --foreground: #f8fafc;
+  --card: #ffffff02;
+  /* Celeste Card */
+  --border: #47578d77;
+  --accent: #7dd3fc;
+  /* Pure Celeste Accent */
+  --muted: #94a3b8;
+
+  --score-green: #10b981;
+  --score-orange: #f59e0b;
+  --score-red: #ef4444;
 }
 
 body {
-  background: linear-gradient(135deg, #0a192f 0%, #112240 50%, #005f73 100%);
-  background-attachment: fixed;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), sans-serif;
+  -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  color: #ffffff;
 }
 
-.glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+.card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
-.glass-dark {
-  background: rgba(1, 3, 5, 0.98);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
-.radial-progress {
-  transform: rotate(-90deg);
+.input-premium {
+  background-color: #0f172a;
+  border: 1px solid var(--border);
+  color: #fff;
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-
-  100% {
-    background-position: 200% 0;
-  }
+.input-premium:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
-.shimmer {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 2s infinite;
+.btn-primary {
+  background-color: var(--accent);
+  color: #0f172a;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
-/* Hide Next.js Dev Badge and Overlays */
-#data-next-badge-root,
-[data-next-badge-root],
-nextjs-portal,
-.nextjs-toast-errors-parent {
+.btn-primary:hover {
+  opacity: 0.9;
+  filter: brightness(1.1);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* Hide Next.js Dev Badge to keep it clean */
+#data-next-badge-root {
   display: none !important;
 }

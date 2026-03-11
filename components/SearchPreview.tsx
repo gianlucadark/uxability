@@ -26,35 +26,32 @@ export default function SearchPreview({ url, metadata }: SearchPreviewProps) {
     }
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="space-y-6">
             <div className="flex items-center gap-3">
-                <h3 className="text-2xl font-bold">{t('searchPreviewTitle')}</h3>
-                <div className="h-px flex-grow bg-white/10"></div>
+                <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-white">
+                    <Search className="w-5 h-5 md:w-6 md:h-6" />
+                </div>
+                <div>
+                    <h3 className="text-xl md:text-2xl font-bold text-white">{t('searchPreviewTitle')}</h3>
+                    <p className="text-slate-500 text-xs md:text-sm font-medium">{t('searchPreviewSubtitle')}</p>
+                </div>
             </div>
 
-            <div className="p-8 glass rounded-3xl border border-white/10 bg-white/[0.02]">
-                <div className="max-w-2xl bg-white rounded-2xl p-6 shadow-2xl relative overflow-hidden group">
-                    {/* Mock Search Header */}
-                    <div className="flex items-center gap-3 mb-4 opacity-50 border-b pb-3">
-                        <div className="p-1.5 rounded-full bg-zinc-100 text-zinc-500">
-                            <Search size={14} />
-                        </div>
-                        <div className="h-2 w-32 bg-zinc-100 rounded-full" />
-                    </div>
-
+            <div className="card p-6 md:p-10 space-y-8">
+                <div className="max-w-2xl bg-white rounded-2xl p-6 shadow-xl overflow-hidden group">
                     {/* Google Style Result */}
-                    <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 text-sm text-[#202124] mb-1">
-                            <div className="w-6 h-6 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400">
-                                <Globe size={12} />
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                                <Globe size={16} />
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-xs leading-none font-medium">{new URL(url).hostname}</span>
-                                <span className="text-[10px] opacity-60 leading-tight truncate max-w-[200px]">{displayUrl}</span>
+                                <span className="text-sm font-medium text-[#202124]">{new URL(url).hostname}</span>
+                                <span className="text-[11px] text-[#4d5156] truncate max-w-[250px]">{displayUrl}</span>
                             </div>
                         </div>
 
-                        <h4 className="text-[20px] text-[#1a0dab] hover:underline cursor-pointer leading-snug font-normal">
+                        <h4 className="text-xl text-[#1a0dab] hover:underline cursor-pointer leading-tight font-medium">
                             {metadata.title}
                         </h4>
 
@@ -62,20 +59,15 @@ export default function SearchPreview({ url, metadata }: SearchPreviewProps) {
                             {metadata.description}
                         </p>
                     </div>
-
-                    {/* Badge Overlay */}
-                    <div className="absolute top-2 right-2 px-3 py-1 bg-blue-600 text-white text-[10px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">
-                        SEO Mode
-                    </div>
                 </div>
 
-                <div className="mt-6 flex items-start gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
-                    <div className="shrink-0 p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
+                <div className="flex items-start gap-4 p-5 bg-[#1e293b] border border-[#334155] rounded-xl">
+                    <div className="shrink-0 p-2 rounded-lg bg-[#1e293b] text-slate-500">
                         <Globe size={18} />
                     </div>
                     <div className="space-y-1">
-                        <p className="text-sm font-bold opacity-90">{t('metaTagOptimization')}</p>
-                        <p className="text-xs opacity-60 leading-relaxed">
+                        <p className="text-sm font-bold text-white opacity-90">{t('metaTagOptimization')}</p>
+                        <p className="text-xs text-slate-400 leading-relaxed">
                             {t('metaTagOptimizationDesc')}
                         </p>
                     </div>
