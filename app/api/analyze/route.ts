@@ -142,11 +142,52 @@ async function analyzeUrl(url: string, apiKey?: string, lang: string = 'it') {
         seoMetadata.ogImage = ogImageAudit.details.data;
     }
 
+    const seoScore = Math.round(categoriesData.seo.score * 100);
+    const accessibilityScore = Math.round(categoriesData.accessibility.score * 100);
+
+    // AEO (Answer Engine Optimization) score — deterministic calculation from PageSpeed signals.
+    // Measures how well the page is structured for AI-driven answer engines (SGE, Perplexity, etc.).
+    // Three weighted pillars:
+    //   40% Structure:      structured-data, heading-order, meta-description, document-title
+    //   30% Content clarity: link-text, image-alt, crawlable-anchors
+    //   30% Discoverability: SEO score + canonical
+    const aeo = (() => {
+        const a = (id: string) => audits[id]?.score ?? 0;
+
+        const structuredData  = a("structured-data");
+        const headingOrder    = a("heading-order");
+        const metaDesc        = a("meta-description");
+        const docTitle        = a("document-title");
+        const linkText        = a("link-text");
+        const imageAlt        = a("image-alt");
+        const crawlable       = a("crawlable-anchors");
+        const canonical       = a("canonical");
+
+        const structure      = structuredData * 0.40 + headingOrder * 0.25 + metaDesc * 0.20 + docTitle * 0.15;
+        const clarity        = linkText * 0.40 + imageAlt * 0.40 + crawlable * 0.20;
+        const discoverability = (seoScore / 100) * 0.70 + canonical * 0.30;
+
+        const raw = structure * 0.40 + clarity * 0.30 + discoverability * 0.30;
+        return Math.round(raw * 100);
+    })();
+
+    const aeoBreakdown = {
+        structuredData:  audits["structured-data"]?.score ?? 0,
+        headingOrder:    audits["heading-order"]?.score ?? 0,
+        metaDescription: audits["meta-description"]?.score ?? 0,
+        documentTitle:   audits["document-title"]?.score ?? 0,
+        linkText:        audits["link-text"]?.score ?? 0,
+        imageAlt:        audits["image-alt"]?.score ?? 0,
+        crawlableAnchors: audits["crawlable-anchors"]?.score ?? 0,
+        canonical:       audits["canonical"]?.score ?? 1,
+    };
+
     const scores = {
         performance: Math.round(categoriesData.performance.score * 100),
-        accessibility: Math.round(categoriesData.accessibility.score * 100),
+        accessibility: accessibilityScore,
         bestPractices: Math.round(categoriesData["best-practices"].score * 100),
-        seo: Math.round(categoriesData.seo.score * 100),
+        seo: seoScore,
+        aeo,
     };
 
     const getDetailedAudits = (categoryKey: string) => {
@@ -225,7 +266,8 @@ async function analyzeUrl(url: string, apiKey?: string, lang: string = 'it') {
         resourceSummary,
         mainThreadWork,
         keyMetrics,
-        seoMetadata
+        seoMetadata,
+        aeoBreakdown,
     };
 }
 

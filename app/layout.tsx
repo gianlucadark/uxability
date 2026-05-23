@@ -36,7 +36,7 @@ export default function RootLayout({
         <LanguageProvider>
           {children}
         </LanguageProvider>
-
+{/* 
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-XE0CH7MY4Q"
           strategy="afterInteractive"
@@ -49,7 +49,7 @@ export default function RootLayout({
             gtag('js', new Date());
             gtag('config', 'G-XE0CH7MY4Q');
           `}
-        </Script>
+        </Script> */}
       </body>
     </html>
   );

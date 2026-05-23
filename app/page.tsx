@@ -16,6 +16,7 @@ import LabMetrics from "@/components/LabMetrics";
 import AIRecommendation from "@/components/AIRecommendation";
 import FrustrationIndex from "@/components/FrustrationIndex";
 import SocialPreview from "@/components/SocialPreview";
+import AEOScore from "@/components/AEOScore";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useLanguage } from "@/context/LanguageContext";
@@ -193,13 +194,44 @@ export default function Home() {
     doc.save(filename);
   };
 
+  const marqueeItems = [
+    "PERFORMANCE", "ACCESSIBILITY", "SEO", "CORE WEB VITALS",
+    "AI ANALYSIS", "UX AUDIT", "AEO SCORE", "BEST PRACTICES",
+    "FRUSTRATION INDEX", "LIGHTHOUSE", "RESOURCE BREAKDOWN",
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col items-center overflow-x-hidden bg-[#0f172a] text-[#f8fafc]">
+    <div className="min-h-screen flex flex-col items-center overflow-x-hidden bg-[#080c16] text-[#f1f5f9]">
       <Navbar />
 
       <main className="w-full max-w-5xl px-4 md:px-6 pt-32 md:pt-40 pb-20 flex-grow relative">
         {/* Hero Section */}
-        <section className="text-center mb-24">
+        <section className="text-center mb-0 relative">
+          {/* Background decoration */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden"
+          >
+            <span
+              className="text-[22vw] md:text-[18vw] font-black tracking-tighter leading-none text-white"
+              style={{ opacity: 0.018 }}
+            >
+              AUDIT
+            </span>
+          </div>
+
+          {/* Section tag */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.05 }}
+            className="flex items-center justify-center gap-3 mb-8"
+          >
+            <div className="h-px w-10 bg-gradient-to-r from-transparent to-sky-400/25" />
+            <span className="section-label text-sky-400/45">v1.0 · Web Intelligence</span>
+            <div className="h-px w-10 bg-gradient-to-l from-transparent to-sky-400/25" />
+          </motion.div>
+
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -211,7 +243,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-lg md:text-xl text-sky-400/80 font-medium max-w-2xl mx-auto mb-12"
+            className="text-base md:text-lg text-sky-400/65 font-medium max-w-xl mx-auto mb-12"
           >
             {t('heroSubtitle')}
           </motion.p>
@@ -292,6 +324,18 @@ export default function Home() {
             )}
           </motion.form>
         </section>
+
+        {/* Marquee strip */}
+        <div className="relative -mx-4 md:-mx-6 overflow-hidden border-y border-white/[0.04] py-3 my-16">
+          <div className="flex whitespace-nowrap animate-marquee">
+            {[...marqueeItems, ...marqueeItems].map((item, i) => (
+              <span key={i} className="section-label text-slate-700 mx-10">
+                {item}
+                <span className="ml-10 text-slate-800">·</span>
+              </span>
+            ))}
+          </div>
+        </div>
 
         {/* Results Dashboard */}
         <AnimatePresence mode="wait">
@@ -394,6 +438,12 @@ export default function Home() {
                 opportunities={currentResult.opportunities}
               />
 
+              {/* AEO Score */}
+              <AEOScore
+                score={currentResult.scores.aeo}
+                breakdown={currentResult.aeoBreakdown}
+              />
+              
               {/* 1. Core Visuals & Real World Experience */}
               <div className="space-y-16">
                 {/* 

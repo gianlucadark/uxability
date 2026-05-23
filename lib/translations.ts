@@ -190,7 +190,40 @@ export const translations = {
         socialPreviewTitle: "Social Share Preview",
         socialPreviewSubtitle: "Ecco come apparirà il tuo sito quando verrà condiviso sui social media.",
         socialPreviewCard: "Anteprima Link",
-        socialPreviewHint: "Un'immagine e una descrizione accattivanti aumentano il CTR del 30%."
+        socialPreviewHint: "Un'immagine e una descrizione accattivanti aumentano il CTR del 30%.",
+
+        // AEO Score
+        aeoTitle: "AEO Score",
+        aeoSubtitle: "Answer Engine Optimization — quanto il tuo sito è leggibile dagli AI.",
+        aeoScoreLabel: "AEO Score",
+
+        aeo_whatIs_title: "Cos'è l'AEO e perché è importante",
+        aeo_whatIs_body: "L'Answer Engine Optimization (AEO) misura quanto il tuo sito è ottimizzato per i motori di risposta basati su AI: Google SGE, Perplexity, ChatGPT, Bing Copilot e simili. Questi sistemi non si limitano a elencare link, ma estraggono direttamente risposte dal contenuto delle pagine. Un sito con AEO alto ha più probabilità di essere citato come fonte autorevole, aumentando visibilità e traffico qualificato anche senza clic tradizionali.",
+        aeo_whatIs_note: "Nota: non esiste ancora un punteggio AEO ufficiale. Questo score è calcolato deterministicamente combinando i segnali di struttura, chiarezza e scopribilità.",
+
+        aeo_pillar_structure: "Struttura Contenuto",
+        aeo_pillar_clarity: "Chiarezza per AI",
+        aeo_pillar_discoverability: "Scopribilità",
+
+        aeo_signal_structuredData: "Dati Strutturati (Schema.org)",
+        aeo_signal_headingOrder: "Gerarchia Titoli (H1→H2→H3)",
+        aeo_signal_metaDesc: "Meta Description",
+        aeo_signal_docTitle: "Titolo Pagina",
+        aeo_signal_linkText: "Testo Link Descrittivo",
+        aeo_signal_imageAlt: "Testo Alternativo Immagini",
+        aeo_signal_crawlable: "Link Navigabili da Bot",
+        aeo_signal_canonical: "URL Canonico",
+
+        aeo_tip_structuredData: "Markup Schema.org aiuta gli AI a capire il tipo di contenuto (articolo, prodotto, FAQ...).",
+        aeo_tip_headingOrder: "Una gerarchia logica di titoli facilita l'estrazione di risposte strutturate.",
+        aeo_tip_metaDesc: "Una meta description chiara viene spesso usata come snippet nelle risposte AI.",
+        aeo_tip_docTitle: "Il titolo della pagina è il primo segnale di topic per qualsiasi motore.",
+        aeo_tip_linkText: "I testi dei link descrittivi aiutano l'AI a capire il contesto della navigazione.",
+        aeo_tip_imageAlt: "L'alt text permette all'AI di comprendere i contenuti visivi della pagina.",
+        aeo_tip_crawlable: "Link accessibili da bot garantiscono che l'AI possa esplorare tutto il sito.",
+        aeo_tip_canonical: "Un URL canonico evita contenuti duplicati e concentra l'autorità sulla pagina giusta.",
+
+        aeo_disclaimer: "Questo punteggio è un'approssimazione deterministica basata sui segnali disponibili. Non riflette un algoritmo ufficiale di alcun motore AI.",
     },
     en: {
         // Navbar
@@ -383,7 +416,40 @@ export const translations = {
         socialPreviewTitle: "Social Share Preview",
         socialPreviewSubtitle: "This is how your site will look when shared on social media.",
         socialPreviewCard: "Link Preview",
-        socialPreviewHint: "A catchy image and description increase CTR by 30%."
+        socialPreviewHint: "A catchy image and description increase CTR by 30%.",
+
+        // AEO Score
+        aeoTitle: "AEO Score",
+        aeoSubtitle: "Answer Engine Optimization — how readable your site is for AI engines.",
+        aeoScoreLabel: "AEO Score",
+
+        aeo_whatIs_title: "What is AEO and why does it matter",
+        aeo_whatIs_body: "Answer Engine Optimization (AEO) measures how well your site is optimized for AI-powered answer engines: Google SGE, Perplexity, ChatGPT, Bing Copilot, and similar. These systems don't just list links — they extract direct answers from page content. A site with a high AEO score is more likely to be cited as an authoritative source, increasing visibility and qualified traffic even without traditional clicks.",
+        aeo_whatIs_note: "Note: there is no official AEO score yet. This score is computed deterministically by combining structure, clarity, and discoverability signals.",
+
+        aeo_pillar_structure: "Content Structure",
+        aeo_pillar_clarity: "AI Clarity",
+        aeo_pillar_discoverability: "Discoverability",
+
+        aeo_signal_structuredData: "Structured Data (Schema.org)",
+        aeo_signal_headingOrder: "Heading Hierarchy (H1→H2→H3)",
+        aeo_signal_metaDesc: "Meta Description",
+        aeo_signal_docTitle: "Page Title",
+        aeo_signal_linkText: "Descriptive Link Text",
+        aeo_signal_imageAlt: "Image Alt Text",
+        aeo_signal_crawlable: "Bot-Navigable Links",
+        aeo_signal_canonical: "Canonical URL",
+
+        aeo_tip_structuredData: "Schema.org markup helps AI understand the content type (article, product, FAQ...).",
+        aeo_tip_headingOrder: "A logical heading hierarchy makes it easier to extract structured answers.",
+        aeo_tip_metaDesc: "A clear meta description is often used as a snippet in AI responses.",
+        aeo_tip_docTitle: "The page title is the primary topic signal for any search engine.",
+        aeo_tip_linkText: "Descriptive link text helps AI understand the navigation context.",
+        aeo_tip_imageAlt: "Alt text allows AI to understand the visual content of the page.",
+        aeo_tip_crawlable: "Bot-accessible links ensure AI can explore the entire site.",
+        aeo_tip_canonical: "A canonical URL prevents duplicate content and focuses authority on the right page.",
+
+        aeo_disclaimer: "This score is a deterministic approximation based on signals available. It does not reflect an official algorithm from any AI engine.",
     }
 };
 
