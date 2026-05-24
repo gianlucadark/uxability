@@ -43,7 +43,7 @@ export default function Navbar() {
                     </button>
 
                     <Link
-                        href="https://gian-ui.vercel.app"
+                        href="https://gianlucadarcangelo.vercel.app"
                         target="_blank"
                         className="hidden sm:flex items-center gap-1.5 section-label text-slate-500 hover:text-sky-400 transition-colors"
                     >

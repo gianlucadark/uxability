@@ -8,7 +8,7 @@ export default function Footer() {
                     <span className="section-label text-slate-700">Web Intelligence</span>
                 </div>
                 <a
-                    href="https://gian-ui.vercel.app"
+                    href="https://gianlucadarcangelo.vercel.app"
                     target="_blank"
                     className="section-label text-slate-600 hover:text-sky-400 transition-colors"
                 >
