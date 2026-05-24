@@ -816,7 +816,172 @@ body::after {
     0 8px 18px rgba(32, 28, 24, 0.08);
 }
 
+.scan-visual {
+  position: relative;
+  display: grid;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(32, 28, 24, 0.18);
+  border-radius: 12px;
+  background:
+    linear-gradient(rgba(32, 28, 24, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(32, 28, 24, 0.05) 1px, transparent 1px),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(234, 216, 181, 0.24));
+  background-size: 12px 12px, 12px 12px, auto;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    0 10px 24px rgba(32, 28, 24, 0.1);
+}
+
+.scan-visual__icon {
+  color: rgba(32, 28, 24, 0.68);
+  filter: drop-shadow(0 4px 10px rgba(32, 28, 24, 0.12));
+  animation: scan-radar-pulse 1.7s ease-in-out infinite;
+}
+
+.scan-visual__line {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 7px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(212, 185, 140, 0.96), rgba(32, 28, 24, 0.44), transparent);
+  box-shadow: 0 0 16px rgba(212, 185, 140, 0.74);
+  animation: scan-line 1.45s ease-in-out infinite;
+}
+
+.scan-visual__corner {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: rgba(32, 28, 24, 0.58);
+  animation: scan-corners 1.7s ease-in-out infinite;
+}
+
+.scan-visual__corner--tl {
+  top: 7px;
+  left: 7px;
+  border-top: 2px solid;
+  border-left: 2px solid;
+}
+
+.scan-visual__corner--tr {
+  top: 7px;
+  right: 7px;
+  border-top: 2px solid;
+  border-right: 2px solid;
+}
+
+.scan-visual__corner--br {
+  right: 7px;
+  bottom: 7px;
+  border-right: 2px solid;
+  border-bottom: 2px solid;
+}
+
+.scan-visual__corner--bl {
+  bottom: 7px;
+  left: 7px;
+  border-bottom: 2px solid;
+  border-left: 2px solid;
+}
+
+.scan-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.scan-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--champagne-muted);
+  animation: scan-dot 1s ease-in-out infinite;
+}
+
+.scan-dots span:nth-child(2) { animation-delay: 0.15s; }
+.scan-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+.scan-chip {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(32, 28, 24, 0.11);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.54);
+  padding: 5px 7px;
+  color: rgba(32, 28, 24, 0.68);
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  animation: scan-chip-glow 1.8s ease-in-out infinite;
+}
+
 #data-next-badge-root { display: none !important; }
+
+@keyframes scan-line {
+  0%, 100% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  12%, 88% {
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(42px);
+  }
+}
+
+@keyframes scan-radar-pulse {
+  0%, 100% {
+    opacity: 0.52;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes scan-corners {
+  0%, 100% {
+    opacity: 0.55;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes scan-dot {
+  0%, 100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes scan-chip-glow {
+  0%, 100% {
+    border-color: rgba(32, 28, 24, 0.11);
+    background: rgba(255, 255, 255, 0.54);
+  }
+  50% {
+    border-color: rgba(212, 185, 140, 0.72);
+    background: rgba(234, 216, 181, 0.34);
+  }
+}
 
 @media (max-width: 768px), (pointer: coarse) {
   .cursor-orbit {
@@ -867,6 +1032,11 @@ body::after {
   .creative-backdrop__ruler {
     display: none;
   }
+
+  .scan-chip {
+    padding-inline: 5px;
+    font-size: 0.56rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -883,5 +1053,13 @@ body::after {
 
   .cursor-orbit {
     transition: none;
+  }
+
+  .scan-visual__icon,
+  .scan-visual__line,
+  .scan-visual__corner,
+  .scan-dots span,
+  .scan-chip {
+    animation: none;
   }
 }

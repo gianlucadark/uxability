@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Loader2, ArrowRight, CheckCircle2, Globe, FileText, Zap, Bot } from "lucide-react";
+import { Search, Loader2, ArrowRight, CheckCircle2, Globe, FileText, Zap, Bot, Radar } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CreativeBackdrop from "@/components/CreativeBackdrop";
@@ -835,33 +835,54 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Shimmer loading bar */}
             <AnimatePresence>
               {loading && (
                 <motion.div
-                  key="loading-bar"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute -bottom-0 left-6 right-6 h-[1px] rounded-full overflow-hidden bg-stone-900/10"
+                  key="scan-status"
+                  initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                  transition={{ duration: 0.25 }}
+                  className="absolute left-0 right-0 top-[calc(100%+12px)] z-20 mx-auto max-w-xl rounded-xl border border-stone-900/15 bg-[rgba(255,252,246,0.92)] p-3 shadow-[0_18px_45px_rgba(32,28,24,0.14)] backdrop-blur-xl"
                 >
-                  <motion.div
-                    initial={{ left: "-100%" }}
-                    animate={{ left: "100%" }}
-                    transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-                    className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-stone-600 to-transparent"
-                  />
+                  <div className="flex items-center gap-3">
+                    <div className="scan-visual" aria-hidden="true">
+                      <Radar size={18} className="scan-visual__icon" />
+                      <span className="scan-visual__line" />
+                      <span className="scan-visual__corner scan-visual__corner--tl" />
+                      <span className="scan-visual__corner scan-visual__corner--tr" />
+                      <span className="scan-visual__corner scan-visual__corner--br" />
+                      <span className="scan-visual__corner scan-visual__corner--bl" />
+                    </div>
+
+                    <div className="min-w-0 flex-1 text-left">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="truncate text-xs font-bold uppercase tracking-[0.16em] text-stone-700">
+                          {t('scanPanelTitle')}
+                        </p>
+                        <div className="scan-dots" aria-hidden="true">
+                          <span />
+                          <span />
+                          <span />
+                        </div>
+                      </div>
+                      <p className="mt-1 text-xs font-medium text-stone-500">
+                        {t('crawlingText')}
+                      </p>
+                      <div className="mt-3 grid grid-cols-3 gap-1.5">
+                        {[t('scanStepStructure'), t('scanStepVitals'), t('scanStepAI')].map((step, index) => (
+                          <span
+                            key={step}
+                            className="scan-chip"
+                            style={{ animationDelay: `${index * 0.28}s` }}
+                          >
+                            {step}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </motion.div>
-              )}
-              {loading && (
-                <motion.p
-                  key="loading-text"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="absolute -bottom-8 left-0 right-0 text-center text-xs font-medium opacity-50 animate-pulse pointer-events-none"
-                >
-                  {t('crawlingText')}
-                </motion.p>
               )}
             </AnimatePresence>
 

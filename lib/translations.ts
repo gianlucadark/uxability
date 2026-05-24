@@ -9,6 +9,10 @@ export const translations = {
         inputPlaceholder: "Inserisci l'URL (es. google.com)",
         analyzeButton: "Analizza Sito",
         crawlingText: "Crawl intelligente in corso: Analizzando 5 pagine...",
+        scanPanelTitle: "Scansione live",
+        scanStepStructure: "Struttura",
+        scanStepVitals: "Vitals",
+        scanStepAI: "AI Readability",
 
         // Results
         homePage: "Home Page",
@@ -295,6 +299,10 @@ export const translations = {
         inputPlaceholder: "Enter URL (e.g., vercel.com)",
         analyzeButton: "Analyze Site",
         crawlingText: "Intelligent crawl in progress: Analyzing 5 pages...",
+        scanPanelTitle: "Live scan",
+        scanStepStructure: "Structure",
+        scanStepVitals: "Vitals",
+        scanStepAI: "AI Readability",
 
         // Results
         homePage: "Home Page",
