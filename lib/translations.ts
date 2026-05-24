@@ -5,7 +5,7 @@ export const translations = {
 
         // Hero
         heroTitle: "UXABILITY",
-        heroSubtitle: "Analizza il tuo sito web con un crawl intelligente. Ricevi report PDF completi su velocità, SEO e come migliorare.",
+        heroSubtitle: "Non solo velocità e SEO — scopri anche come ChatGPT, Perplexity e Google AI leggono il tuo sito. L'unico crawler con AEO Score integrato.",
         inputPlaceholder: "Inserisci l'URL (es. google.com)",
         analyzeButton: "Analizza Sito",
         crawlingText: "Crawl intelligente in corso: Analizzando 5 pagine...",
@@ -199,31 +199,65 @@ export const translations = {
 
         aeo_whatIs_title: "Cos'è l'AEO e perché è importante",
         aeo_whatIs_body: "L'Answer Engine Optimization (AEO) misura quanto il tuo sito è ottimizzato per i motori di risposta basati su AI: Google SGE, Perplexity, ChatGPT, Bing Copilot e simili. Questi sistemi non si limitano a elencare link, ma estraggono direttamente risposte dal contenuto delle pagine. Un sito con AEO alto ha più probabilità di essere citato come fonte autorevole, aumentando visibilità e traffico qualificato anche senza clic tradizionali.",
-        aeo_whatIs_note: "Nota: non esiste ancora un punteggio AEO ufficiale. Questo score è calcolato deterministicamente combinando i segnali di struttura, chiarezza e scopribilità.",
+        aeo_whatIs_note: "Nota: non esiste ancora un punteggio AEO ufficiale. Questo score è calcolato analizzando l'HTML reale della pagina su 13 segnali in 3 categorie: Struttura, Contenuto e Autorevolezza.",
 
-        aeo_pillar_structure: "Struttura Contenuto",
+        aeo_pillar_structure: "Struttura",
+        aeo_pillar_content: "Contenuto",
+        aeo_pillar_authority: "Autorevolezza",
+        // legacy keys kept for safety
         aeo_pillar_clarity: "Chiarezza per AI",
         aeo_pillar_discoverability: "Scopribilità",
 
+        // New 13-signal keys
+        aeo_signal_schema: "Schema.org JSON-LD",
+        aeo_signal_headings: "Gerarchia Titoli H1→H6",
+        aeo_signal_semantic: "Tag HTML Semantici",
+        aeo_signal_metaDesc: "Meta Description",
+        aeo_signal_qa: "Densità Domande & Risposte",
+        aeo_signal_chunks: "Paragrafi Estraibili (40-80 parole)",
+        aeo_signal_definitions: "Blocchi Definizione",
+        aeo_signal_answerFirst: "Risposta Diretta nel Primo Paragrafo",
+        aeo_signal_author: "Autore / Byline",
+        aeo_signal_datePublished: "Data di Pubblicazione",
+        aeo_signal_citations: "Link Esterni (Citazioni)",
+        aeo_signal_llmsTxt: "File /llms.txt",
+        aeo_signal_faqSchema: "Schema FAQPage / HowTo",
+
+        // Tips for each signal
+        aeo_tip_schema: "JSON-LD con Schema.org aiuta gli AI a capire il tipo di contenuto (articolo, prodotto, FAQ...).",
+        aeo_tip_headings: "Una gerarchia logica H1→H6 senza salti facilita l'estrazione di risposte strutturate.",
+        aeo_tip_semantic: "Tag come <article>, <section>, <main> delimitano semanticamente i blocchi di contenuto.",
+        aeo_tip_metaDesc: "Una meta description chiara (≥50 caratteri) viene spesso usata come snippet nelle risposte AI.",
+        aeo_tip_qa: "Titoli H2/H3 che iniziano con parole interrogative aumentano la probabilità di apparire in Q&A.",
+        aeo_tip_chunks: "Paragrafi di 40-80 parole sono facilmente estraibili e citabili dai motori AI.",
+        aeo_tip_definitions: "Pattern tipo 'X è...' e tag <dl> segnalano all'AI blocchi di definizione autorevoli.",
+        aeo_tip_answerFirst: "Un paragrafo breve (≤100 parole) subito dopo ogni titolo offre una risposta diretta pronta per l'estrazione.",
+        aeo_tip_author: "La presenza di autore/byline aumenta il trust e il peso attribuito alla fonte.",
+        aeo_tip_datePublished: "Una data di pubblicazione aiuta l'AI a valutare la freschezza e rilevanza del contenuto.",
+        aeo_tip_citations: "Link verso fonti esterne autorevoli aumentano la credibilità percepita della pagina.",
+        aeo_tip_llmsTxt: "Il file /llms.txt comunica ai modelli AI le intenzioni del sito riguardo all'indicizzazione.",
+        aeo_tip_faqSchema: "Schema FAQPage o HowTo abilita i rich result e aumenta la probabilità di citazione diretta.",
+
+        // Legacy signal keys kept for safety
         aeo_signal_structuredData: "Dati Strutturati (Schema.org)",
         aeo_signal_headingOrder: "Gerarchia Titoli (H1→H2→H3)",
-        aeo_signal_metaDesc: "Meta Description",
         aeo_signal_docTitle: "Titolo Pagina",
         aeo_signal_linkText: "Testo Link Descrittivo",
         aeo_signal_imageAlt: "Testo Alternativo Immagini",
         aeo_signal_crawlable: "Link Navigabili da Bot",
         aeo_signal_canonical: "URL Canonico",
-
-        aeo_tip_structuredData: "Markup Schema.org aiuta gli AI a capire il tipo di contenuto (articolo, prodotto, FAQ...).",
+        aeo_tip_structuredData: "Markup Schema.org aiuta gli AI a capire il tipo di contenuto.",
         aeo_tip_headingOrder: "Una gerarchia logica di titoli facilita l'estrazione di risposte strutturate.",
-        aeo_tip_metaDesc: "Una meta description chiara viene spesso usata come snippet nelle risposte AI.",
         aeo_tip_docTitle: "Il titolo della pagina è il primo segnale di topic per qualsiasi motore.",
         aeo_tip_linkText: "I testi dei link descrittivi aiutano l'AI a capire il contesto della navigazione.",
         aeo_tip_imageAlt: "L'alt text permette all'AI di comprendere i contenuti visivi della pagina.",
         aeo_tip_crawlable: "Link accessibili da bot garantiscono che l'AI possa esplorare tutto il sito.",
         aeo_tip_canonical: "Un URL canonico evita contenuti duplicati e concentra l'autorità sulla pagina giusta.",
 
-        aeo_disclaimer: "Questo punteggio è un'approssimazione deterministica basata sui segnali disponibili. Non riflette un algoritmo ufficiale di alcun motore AI.",
+        aeo_error_fetch: "Impossibile recuperare il contenuto della pagina (potrebbe bloccare il crawling automatico). I segnali mostrati non sono attendibili.",
+        aeo_disclaimer: "Questo punteggio è calcolato analizzando l'HTML reale della pagina. Non riflette un algoritmo ufficiale di alcun motore AI.",
+        aeo_showDetails: "Mostra dettagli segnali",
+        aeo_hideDetails: "Nascondi dettagli",
     },
     en: {
         // Navbar
@@ -231,7 +265,7 @@ export const translations = {
 
         // Hero
         heroTitle: "UXABILITY",
-        heroSubtitle: "Analyze your website with an intelligent crawl. Get complete PDF reports on speed, SEO and how to improve.",
+        heroSubtitle: "Not just speed and SEO — find out how ChatGPT, Perplexity and Google AI read your site. The only crawler with a built-in AEO Score.",
         inputPlaceholder: "Enter URL (e.g., vercel.com)",
         analyzeButton: "Analyze Site",
         crawlingText: "Intelligent crawl in progress: Analyzing 5 pages...",
@@ -425,31 +459,65 @@ export const translations = {
 
         aeo_whatIs_title: "What is AEO and why does it matter",
         aeo_whatIs_body: "Answer Engine Optimization (AEO) measures how well your site is optimized for AI-powered answer engines: Google SGE, Perplexity, ChatGPT, Bing Copilot, and similar. These systems don't just list links — they extract direct answers from page content. A site with a high AEO score is more likely to be cited as an authoritative source, increasing visibility and qualified traffic even without traditional clicks.",
-        aeo_whatIs_note: "Note: there is no official AEO score yet. This score is computed deterministically by combining structure, clarity, and discoverability signals.",
+        aeo_whatIs_note: "Note: there is no official AEO score yet. This score is computed by analyzing the actual HTML of the page across 13 signals in 3 categories: Structure, Content, and Authority.",
 
-        aeo_pillar_structure: "Content Structure",
+        aeo_pillar_structure: "Structure",
+        aeo_pillar_content: "Content",
+        aeo_pillar_authority: "Authority",
+        // legacy keys kept for safety
         aeo_pillar_clarity: "AI Clarity",
         aeo_pillar_discoverability: "Discoverability",
 
+        // New 13-signal keys
+        aeo_signal_schema: "Schema.org JSON-LD",
+        aeo_signal_headings: "Heading Hierarchy H1→H6",
+        aeo_signal_semantic: "Semantic HTML Tags",
+        aeo_signal_metaDesc: "Meta Description",
+        aeo_signal_qa: "Q&A Density",
+        aeo_signal_chunks: "Extractable Paragraphs (40-80 words)",
+        aeo_signal_definitions: "Definition Blocks",
+        aeo_signal_answerFirst: "Direct Answer in First Paragraph",
+        aeo_signal_author: "Author / Byline",
+        aeo_signal_datePublished: "Publication Date",
+        aeo_signal_citations: "Outbound Links (Citations)",
+        aeo_signal_llmsTxt: "/llms.txt File",
+        aeo_signal_faqSchema: "FAQPage / HowTo Schema",
+
+        // Tips for each signal
+        aeo_tip_schema: "JSON-LD with Schema.org helps AI understand the content type (article, product, FAQ...).",
+        aeo_tip_headings: "A logical H1→H6 hierarchy without skips makes it easier to extract structured answers.",
+        aeo_tip_semantic: "Tags like <article>, <section>, <main> semantically delimit content blocks.",
+        aeo_tip_metaDesc: "A clear meta description (≥50 chars) is often used as a snippet in AI responses.",
+        aeo_tip_qa: "H2/H3 headings starting with interrogative words increase the chance of appearing in Q&A results.",
+        aeo_tip_chunks: "Paragraphs of 40-80 words are easily extractable and citable by AI engines.",
+        aeo_tip_definitions: "Patterns like 'X is...' and <dl> tags signal authoritative definition blocks to AI.",
+        aeo_tip_answerFirst: "A short paragraph (≤100 words) immediately after each heading provides a direct answer ready for extraction.",
+        aeo_tip_author: "An author/byline increases trust and the weight attributed to the source.",
+        aeo_tip_datePublished: "A publication date helps AI assess the freshness and relevance of the content.",
+        aeo_tip_citations: "Links to authoritative external sources increase the perceived credibility of the page.",
+        aeo_tip_llmsTxt: "The /llms.txt file communicates to AI models the site's intentions regarding indexing.",
+        aeo_tip_faqSchema: "FAQPage or HowTo schema enables rich results and increases the likelihood of direct citation.",
+
+        // Legacy signal keys kept for safety
         aeo_signal_structuredData: "Structured Data (Schema.org)",
         aeo_signal_headingOrder: "Heading Hierarchy (H1→H2→H3)",
-        aeo_signal_metaDesc: "Meta Description",
         aeo_signal_docTitle: "Page Title",
         aeo_signal_linkText: "Descriptive Link Text",
         aeo_signal_imageAlt: "Image Alt Text",
         aeo_signal_crawlable: "Bot-Navigable Links",
         aeo_signal_canonical: "Canonical URL",
-
-        aeo_tip_structuredData: "Schema.org markup helps AI understand the content type (article, product, FAQ...).",
+        aeo_tip_structuredData: "Schema.org markup helps AI understand the content type.",
         aeo_tip_headingOrder: "A logical heading hierarchy makes it easier to extract structured answers.",
-        aeo_tip_metaDesc: "A clear meta description is often used as a snippet in AI responses.",
         aeo_tip_docTitle: "The page title is the primary topic signal for any search engine.",
         aeo_tip_linkText: "Descriptive link text helps AI understand the navigation context.",
         aeo_tip_imageAlt: "Alt text allows AI to understand the visual content of the page.",
         aeo_tip_crawlable: "Bot-accessible links ensure AI can explore the entire site.",
         aeo_tip_canonical: "A canonical URL prevents duplicate content and focuses authority on the right page.",
 
-        aeo_disclaimer: "This score is a deterministic approximation based on signals available. It does not reflect an official algorithm from any AI engine.",
+        aeo_error_fetch: "Unable to retrieve page content (the site may block automatic crawling). Scores shown are not reliable.",
+        aeo_disclaimer: "This score is computed by analyzing the real HTML of the page. It does not reflect an official algorithm from any AI engine.",
+        aeo_showDetails: "Show signal details",
+        aeo_hideDetails: "Hide details",
     }
 };
 

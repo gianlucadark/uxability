@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Loader2, ArrowRight, CheckCircle2, Globe, FileText, Download, Layout, ExternalLink, Zap } from "lucide-react";
+import { Search, Loader2, ArrowRight, CheckCircle2, Globe, FileText, Download, Layout, ExternalLink, Zap, Bot } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ScoreCircle from "@/components/ScoreCircle";
@@ -28,6 +28,7 @@ export default function Home() {
   const [activeResultIndex, setActiveResultIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [aeoResult, setAeoResult] = useState<any | null>(null);
   const { language, t } = useLanguage();
 
   const handleAnalyze = async (e: React.FormEvent) => {
@@ -45,21 +46,41 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setResults(null);
+    setAeoResult(null);
     setActiveResultIndex(0);
 
     try {
       const formattedUrl = url.startsWith('http') ? url : `https://${url}`;
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: formattedUrl, lang: language }),
-      });
 
-      const data = await response.json();
-      if (response.ok) {
+      const [analyzeSettled, aeoSettled] = await Promise.allSettled([
+        fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: formattedUrl, lang: language }),
+        }),
+        fetch("/api/aeo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: formattedUrl }),
+        }),
+      ]);
+
+      if (analyzeSettled.status === "rejected") {
+        setError(t("connectionError"));
+        return;
+      }
+      const data = await analyzeSettled.value.json();
+      if (analyzeSettled.value.ok) {
         setResults(data.results);
       } else {
-        setError(data.error || t('analysisError'));
+        setError(data.error || t("analysisError"));
+        return;
+      }
+
+      if (aeoSettled.status === "fulfilled") {
+        setAeoResult(await aeoSettled.value.json());
+      } else {
+        setAeoResult({ error: "fetch_failed", aeo: 0, structureScore: 0, contentScore: 0, authorityScore: 0, signals: {} });
       }
     } catch (err) {
       setError(t('connectionError'));
@@ -227,9 +248,12 @@ export default function Home() {
             transition={{ delay: 0.05 }}
             className="flex items-center justify-center gap-3 mb-8"
           >
-            <div className="h-px w-10 bg-gradient-to-r from-transparent to-sky-400/25" />
-            <span className="section-label text-sky-400/45">v1.0 · Web Intelligence</span>
-            <div className="h-px w-10 bg-gradient-to-l from-transparent to-sky-400/25" />
+            <div className="h-px w-10 bg-gradient-to-r from-transparent to-violet-400/25" />
+            <span className="section-label text-violet-400/60 flex items-center gap-1.5">
+              <Bot size={11} />
+              AEO · Lighthouse · AI Analysis
+            </span>
+            <div className="h-px w-10 bg-gradient-to-l from-transparent to-violet-400/25" />
           </motion.div>
 
           <motion.h1
@@ -243,7 +267,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-base md:text-lg text-sky-400/65 font-medium max-w-xl mx-auto mb-12"
+            className="text-base md:text-lg text-slate-300/80 font-medium max-w-2xl mx-auto mb-10"
           >
             {t('heroSubtitle')}
           </motion.p>
@@ -323,6 +347,35 @@ export default function Home() {
               </motion.p>
             )}
           </motion.form>
+
+          {/* Feature chips */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="flex flex-wrap items-center justify-center gap-2 mt-8"
+          >
+            {[
+              { label: "Performance", highlight: false },
+              { label: "Core Web Vitals", highlight: false },
+              { label: "SEO", highlight: false },
+              { label: "AEO Score", highlight: true },
+              { label: "AI Readability", highlight: true },
+              { label: "PDF Report", highlight: false },
+            ].map((chip) => (
+              <span
+                key={chip.label}
+                className={
+                  chip.highlight
+                    ? "flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border bg-violet-500/15 border-violet-500/40 text-violet-300"
+                    : "px-3 py-1 rounded-full text-xs font-medium border border-white/8 text-slate-500"
+                }
+              >
+                {chip.highlight && <Bot size={11} />}
+                {chip.label}
+              </span>
+            ))}
+          </motion.div>
         </section>
 
         {/* Marquee strip */}
@@ -439,10 +492,7 @@ export default function Home() {
               />
 
               {/* AEO Score */}
-              <AEOScore
-                score={currentResult.scores.aeo}
-                breakdown={currentResult.aeoBreakdown}
-              />
+              <AEOScore result={aeoResult} />
               
               {/* 1. Core Visuals & Real World Experience */}
               <div className="space-y-16">
