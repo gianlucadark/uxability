@@ -258,6 +258,32 @@ export const translations = {
         aeo_disclaimer: "Questo punteggio è calcolato analizzando l'HTML reale della pagina. Non riflette un algoritmo ufficiale di alcun motore AI.",
         aeo_showDetails: "Mostra dettagli segnali",
         aeo_hideDetails: "Nascondi dettagli",
+
+        // Carbon Score
+        carbonTitle: "Carbon Footprint",
+        carbonSubtitle: "Impronta di carbonio per visita — quanto CO₂ emette il tuo sito.",
+        carbonPerVisit: "CO₂ per visita",
+        carbonTransferred: "trasferiti",
+        carbonYourSite: "Il tuo sito",
+        carbonAverage: "Media web",
+        carbonAnnual: "CO₂ annuale",
+        carbonAnnualSub: "per 10.000 visitatori/mese",
+        carbonTrees: "Giorni albero",
+        carbonTreesSub: "per compensare le emissioni annuali",
+        carbonTip: "Calcolato con il modello Sustainable Web Design (0.8 kWh/GB × 442g CO₂/kWh). Ridurre il peso della pagina è il modo più diretto per abbattere l'impatto ambientale.",
+
+        // Privacy Score
+        privacyTitle: "Privacy & Tracker Score",
+        privacySubtitle: "Quanti tracker di terze parti stai usando e quanto rispetti la privacy.",
+        privacyFetchFailed: "Impossibile analizzare la pagina per la privacy. Il sito potrebbe bloccare le richieste automatiche.",
+        privacyScoreLabel: "Privacy Score",
+        privacyConsentYes: "Consent Manager rilevato",
+        privacyConsentNo: "Nessun consent manager",
+        privacyThirdParty: "domini di terze parti",
+        privacyNoTrackers: "Nessun tracker noto rilevato. Ottimo per la privacy!",
+        privacyShowTrackers: (n: number) => `Mostra ${n} tracker rilevati`,
+        privacyHideTrackers: "Nascondi tracker",
+        privacyTip: "I tracker pubblicitari penalizzano la privacy degli utenti e possono rallentare il sito. Valuta di consolidare le analytics e aggiungere un consent manager per essere GDPR-compliant.",
     },
     en: {
         // Navbar
@@ -518,6 +544,32 @@ export const translations = {
         aeo_disclaimer: "This score is computed by analyzing the real HTML of the page. It does not reflect an official algorithm from any AI engine.",
         aeo_showDetails: "Show signal details",
         aeo_hideDetails: "Hide details",
+
+        // Carbon Score
+        carbonTitle: "Carbon Footprint",
+        carbonSubtitle: "Carbon footprint per visit — how much CO₂ your site emits.",
+        carbonPerVisit: "CO₂ per visit",
+        carbonTransferred: "transferred",
+        carbonYourSite: "Your site",
+        carbonAverage: "Web average",
+        carbonAnnual: "Annual CO₂",
+        carbonAnnualSub: "for 10,000 visitors/month",
+        carbonTrees: "Tree-days",
+        carbonTreesSub: "to offset annual emissions",
+        carbonTip: "Calculated using the Sustainable Web Design model (0.8 kWh/GB × 442g CO₂/kWh). Reducing page weight is the most direct way to cut your environmental impact.",
+
+        // Privacy Score
+        privacyTitle: "Privacy & Tracker Score",
+        privacySubtitle: "How many third-party trackers you're using and how you respect user privacy.",
+        privacyFetchFailed: "Unable to analyze the page for privacy. The site may block automated requests.",
+        privacyScoreLabel: "Privacy Score",
+        privacyConsentYes: "Consent Manager detected",
+        privacyConsentNo: "No consent manager",
+        privacyThirdParty: "third-party domains",
+        privacyNoTrackers: "No known trackers detected. Great for privacy!",
+        privacyShowTrackers: (n: number) => `Show ${n} detected trackers`,
+        privacyHideTrackers: "Hide trackers",
+        privacyTip: "Advertising trackers hurt user privacy and can slow down your site. Consider consolidating analytics and adding a consent manager to be GDPR-compliant.",
     }
 };
 

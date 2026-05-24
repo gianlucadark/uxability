@@ -17,6 +17,8 @@ import AIRecommendation from "@/components/AIRecommendation";
 import FrustrationIndex from "@/components/FrustrationIndex";
 import SocialPreview from "@/components/SocialPreview";
 import AEOScore from "@/components/AEOScore";
+import CarbonScore from "@/components/CarbonScore";
+import PrivacyScore from "@/components/PrivacyScore";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useLanguage } from "@/context/LanguageContext";
@@ -29,6 +31,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [aeoResult, setAeoResult] = useState<any | null>(null);
+  const [privacyResult, setPrivacyResult] = useState<any | null>(null);
   const { language, t } = useLanguage();
 
   const handleAnalyze = async (e: React.FormEvent) => {
@@ -47,18 +50,24 @@ export default function Home() {
     setError(null);
     setResults(null);
     setAeoResult(null);
+    setPrivacyResult(null);
     setActiveResultIndex(0);
 
     try {
       const formattedUrl = url.startsWith('http') ? url : `https://${url}`;
 
-      const [analyzeSettled, aeoSettled] = await Promise.allSettled([
+      const [analyzeSettled, aeoSettled, privacySettled] = await Promise.allSettled([
         fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: formattedUrl, lang: language }),
         }),
         fetch("/api/aeo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: formattedUrl }),
+        }),
+        fetch("/api/privacy", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: formattedUrl }),
@@ -81,6 +90,12 @@ export default function Home() {
         setAeoResult(await aeoSettled.value.json());
       } else {
         setAeoResult({ error: "fetch_failed", aeo: 0, structureScore: 0, contentScore: 0, authorityScore: 0, signals: {} });
+      }
+
+      if (privacySettled.status === "fulfilled") {
+        setPrivacyResult(await privacySettled.value.json());
+      } else {
+        setPrivacyResult({ error: "fetch_failed", privacyScore: 50, grade: "C", trackers: [], thirdPartyDomains: 0, consentDetected: false, adCount: 0, analyticsCount: 0, functionalCount: 0 });
       }
     } catch (err) {
       setError(t('connectionError'));
@@ -219,6 +234,7 @@ export default function Home() {
     "PERFORMANCE", "ACCESSIBILITY", "SEO", "CORE WEB VITALS",
     "AI ANALYSIS", "UX AUDIT", "AEO SCORE", "BEST PRACTICES",
     "FRUSTRATION INDEX", "LIGHTHOUSE", "RESOURCE BREAKDOWN",
+    "CARBON FOOTPRINT", "PRIVACY SCORE",
   ];
 
   return (
@@ -361,6 +377,8 @@ export default function Home() {
               { label: "SEO", highlight: false },
               { label: "AEO Score", highlight: true },
               { label: "AI Readability", highlight: true },
+              { label: "Carbon Score", highlight: true },
+              { label: "Privacy Score", highlight: true },
               { label: "PDF Report", highlight: false },
             ].map((chip) => (
               <span
@@ -493,6 +511,12 @@ export default function Home() {
 
               {/* AEO Score */}
               <AEOScore result={aeoResult} />
+
+              {/* Carbon Footprint */}
+              <CarbonScore resourceSummary={currentResult.resourceSummary} />
+
+              {/* Privacy & Tracker Score */}
+              <PrivacyScore result={privacyResult} />
               
               {/* 1. Core Visuals & Real World Experience */}
               <div className="space-y-16">
