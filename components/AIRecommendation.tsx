@@ -1,7 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Sparkles, ArrowRight, CheckCircle2, AlertCircle, Zap } from "lucide-react";
+import { Sparkles, CheckCircle2, AlertCircle, Zap } from "lucide-react";
 
 interface AIRecommendationProps {
     score: number;
@@ -27,33 +26,34 @@ export default function AIRecommendation({ score, opportunities }: AIRecommendat
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-white/5 border border-white/10">
-                    <Sparkles className="w-5 h-5 text-white" />
+                <div className="p-2 rounded-lg icon-tile">
+                    <Sparkles className="w-5 h-5 text-stone-600" />
                 </div>
-                <h3 className="text-xl font-bold text-white">{t('aiAdviceTitle')}</h3>
+                <h3 className="text-xl font-bold text-stone-800">{t('aiAdviceTitle')}</h3>
             </div>
 
-            <div className="card p-6 md:p-8">
+            <div className="card p-6 md:p-8 overflow-hidden">
+                <div className="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-[var(--graphite-900)] via-[var(--champagne)] to-transparent opacity-70" />
                 <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 items-start">
                     <div className="space-y-4 lg:w-2/3">
-                        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-[10px] uppercase tracking-widest text-slate-400">
+                        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md eyebrow-pill text-[10px] uppercase tracking-widest">
                             {t('aiSmartAnalysis')}
                         </div>
-                        <h4 className="text-xl md:text-2xl font-bold leading-tight text-white">
+                        <h4 className="text-xl md:text-2xl font-bold leading-tight text-stone-800">
                             {getAdvice(score)}
                         </h4>
-                        <p className="text-slate-400 text-sm leading-relaxed max-w-xl">
+                        <p className="text-stone-500 text-sm leading-relaxed max-w-xl">
                             {t('aiRecommendationDesc', topFix.title)}
                         </p>
                     </div>
 
                     <div className="lg:w-1/3 w-full space-y-4">
-                        <div className="p-5 md:p-6 rounded-xl bg-[#0f172a] border border-[#1e293b] space-y-4">
+                        <div className="p-5 md:p-6 rounded-xl premium-surface space-y-4">
                             <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{t('bestStartingPoint')}</span>
-                                <Zap size={14} className="text-sky-400" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{t('bestStartingPoint')}</span>
+                                <Zap size={14} className="text-stone-500" />
                             </div>
-                            <h5 className="font-bold text-base md:text-lg text-white">
+                            <h5 className="font-bold text-base md:text-lg text-stone-800">
                                 {topFix.title}
                             </h5>
                         </div>
@@ -61,33 +61,33 @@ export default function AIRecommendation({ score, opportunities }: AIRecommendat
                 </div>
 
                 {/* Bottom Stats Row */}
-                <div className="mt-8 pt-6 border-t border-[#334155] grid grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="mt-8 pt-6 border-t border-stone-200 grid grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="space-y-1">
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{t('impactEstimated')}</div>
-                        <div className="text-white text-sm font-bold flex items-center gap-1.5">
-                            <Zap size={14} className="text-sky-400" /> +15-20 Punti
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{t('impactEstimated')}</div>
+                        <div className="text-stone-800 text-sm font-bold flex items-center gap-1.5">
+                            <Zap size={14} className="text-stone-600" /> +15-20 Punti
                         </div>
                     </div>
                     <div className="space-y-1">
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{t('difficulty')}</div>
-                        <div className="text-white font-bold flex items-center gap-1.5 text-sm">
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{t('difficulty')}</div>
+                        <div className="text-stone-800 font-bold flex items-center gap-1.5 text-sm">
                             <div className="flex gap-0.5">
-                                <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                                <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                                <div className="w-1.5 h-1.5 rounded-full bg-slate-700" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-stone-700" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-stone-700" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-stone-300" />
                             </div>
                             {t('medium_label')}
                         </div>
                     </div>
                     <div className="space-y-1">
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{t('focusSeo')}</div>
-                        <div className="text-white text-sm font-bold flex items-center gap-1.5">
-                            <CheckCircle2 size={14} className="text-emerald-500" /> {t('high_label')}
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{t('focusSeo')}</div>
+                        <div className="text-stone-800 text-sm font-bold flex items-center gap-1.5">
+                            <CheckCircle2 size={14} className="text-[var(--success)]" /> {t('high_label')}
                         </div>
                     </div>
                     <div className="space-y-1">
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{t('priority')}</div>
-                        <div className="text-rose-500 text-sm font-bold flex items-center gap-1.5">
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{t('priority')}</div>
+                            <div className="text-[var(--danger)] text-sm font-bold flex items-center gap-1.5">
                             <AlertCircle size={14} /> {t('immediate')}
                         </div>
                     </div>

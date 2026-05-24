@@ -37,29 +37,29 @@ export default function AuditModal({ isOpen, onClose, title, audits }: AuditModa
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                        className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm"
                     />
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                        className="relative w-full max-w-2xl max-h-[80vh] overflow-hidden bg-[#1e293b] rounded-2xl flex flex-col shadow-2xl border border-[#334155]"
+                        className="relative w-full max-w-2xl max-h-[80vh] overflow-hidden bg-[#faf8f5] rounded-2xl flex flex-col shadow-2xl border border-stone-200"
                     >
                         {/* Header */}
-                        <div className="px-6 py-5 border-b border-[#334155] flex items-center justify-between bg-[#0f172a]">
-                            <h3 className="text-xl font-bold text-white">
+                        <div className="px-6 py-5 border-b border-stone-200 flex items-center justify-between bg-white">
+                            <h3 className="text-xl font-bold text-stone-900">
                                 {title} {t('details')}
                             </h3>
                             <button
                                 onClick={onClose}
-                                className="p-2 rounded-lg hover:bg-white/5 transition-colors text-slate-400 hover:text-white"
+                                className="p-2 rounded-lg hover:bg-stone-100 transition-colors text-stone-400 hover:text-stone-800"
                             >
                                 <X size={20} />
                             </button>
                         </div>
 
                         {/* Content */}
-                        <div className="overflow-y-auto p-6 space-y-8 custom-scrollbar bg-[#1e293b]">
+                        <div className="overflow-y-auto p-6 space-y-8 custom-scrollbar bg-[#faf8f5]">
                             {/* Failed Audits */}
                             {failedAudits.length > 0 && (
                                 <div className="space-y-4">
@@ -69,16 +69,16 @@ export default function AuditModal({ isOpen, onClose, title, audits }: AuditModa
                                     </h4>
                                     <div className="grid gap-3">
                                         {failedAudits.map((audit, i) => (
-                                            <div key={`${audit.id}-${i}`} className="p-5 rounded-xl bg-[#0f172a] border border-rose-900/20">
+                                            <div key={`${audit.id}-${i}`} className="p-5 rounded-xl bg-white border border-rose-200/60">
                                                 <div className="flex items-start justify-between gap-4 mb-2">
-                                                    <span className="font-bold text-white text-sm">{audit.title}</span>
+                                                    <span className="font-bold text-stone-800 text-sm">{audit.title}</span>
                                                     {audit.displayValue && (
                                                         <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/10 text-rose-500 font-bold whitespace-nowrap">
                                                             {audit.displayValue}
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="text-xs text-slate-400 leading-relaxed" dangerouslySetInnerHTML={{ __html: audit.description }} />
+                                                <p className="text-xs text-stone-500 leading-relaxed" dangerouslySetInnerHTML={{ __html: audit.description }} />
                                             </div>
                                         ))}
                                     </div>
@@ -93,14 +93,14 @@ export default function AuditModal({ isOpen, onClose, title, audits }: AuditModa
                                 </h4>
                                 <div className="grid gap-3">
                                     {passedAudits.map((audit, i) => (
-                                        <div key={`${audit.id}-${i}`} className="p-5 rounded-xl bg-[#0f172a] border border-emerald-900/20">
+                                        <div key={`${audit.id}-${i}`} className="p-5 rounded-xl bg-white border border-emerald-200/60">
                                             <div className="flex items-start justify-between gap-4 mb-2">
-                                                <span className="font-bold text-white/90 text-sm">{audit.title}</span>
+                                                <span className="font-bold text-stone-700 text-sm">{audit.title}</span>
                                             </div>
                                             {audit.displayValue && (
                                                 <div className="text-[10px] text-emerald-500/60 font-bold mb-2 uppercase">{audit.displayValue}</div>
                                             )}
-                                            <p className="text-xs text-slate-500 leading-relaxed" dangerouslySetInnerHTML={{ __html: audit.description }} />
+                                            <p className="text-xs text-stone-400 leading-relaxed" dangerouslySetInnerHTML={{ __html: audit.description }} />
                                         </div>
                                     ))}
                                 </div>

@@ -14,13 +14,13 @@ export default function FieldDataBadges({ fieldData }: FieldDataBadgesProps) {
 
     if (!fieldData || !fieldData.metrics) {
         return (
-            <div className="glass p-12 rounded-[2.5rem] border border-white/5 animate-in fade-in slide-in-from-bottom-4 flex flex-col items-center justify-center text-center space-y-6 bg-white/[0.01]">
-                <div className="p-6 rounded-full bg-[#0f172a] border border-[#334155] opacity-30 text-slate-500">
+            <div className="card p-12 animate-in fade-in slide-in-from-bottom-4 flex flex-col items-center justify-center text-center space-y-6">
+                <div className="p-6 rounded-full icon-tile text-stone-500">
                     <Info size={40} />
                 </div>
                 <div className="space-y-2">
-                    <h3 className="text-2xl font-bold text-white opacity-80">{t('fieldDataNotAvailable')}</h3>
-                    <p className="text-sm text-slate-500 max-w-lg leading-relaxed">
+                    <h3 className="text-2xl font-bold text-stone-900">{t('fieldDataNotAvailable')}</h3>
+                    <p className="text-sm text-stone-600 max-w-lg leading-relaxed">
                         {t('fieldDataNotAvailableDesc')}
                     </p>
                 </div>
@@ -101,24 +101,24 @@ export default function FieldDataBadges({ fieldData }: FieldDataBadgesProps) {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-white">
+                        <div className="p-2 rounded-lg icon-tile">
                             <Globe className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <h3 className="text-xl md:text-2xl font-bold text-white">{t('fieldDataTitle')}</h3>
+                        <h3 className="text-xl md:text-2xl font-bold text-stone-800">{t('fieldDataTitle')}</h3>
                     </div>
-                    <p className="text-slate-400 font-medium max-w-xl text-xs md:text-sm">
+                    <p className="text-stone-600 font-medium max-w-xl text-xs md:text-sm">
                         {t('fieldDataSubtitle')}
                     </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 md:gap-4 card px-4 md:px-6 py-2.5 md:py-3">
-                    <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold text-slate-500">
+                    <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold text-stone-400">
                         <div className="w-2 h-2 rounded-full bg-emerald-500" /> {t('fast')}
                     </div>
-                    <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold text-slate-500">
-                        <div className="w-2 h-2 rounded-full bg-amber-500" /> {t('normal')}
+                    <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold text-stone-400">
+                        <div className="w-2 h-2 rounded-full bg-amber-400" /> {t('normal')}
                     </div>
-                    <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold text-slate-500">
+                    <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold text-stone-400">
                         <div className="w-2 h-2 rounded-full bg-rose-500" /> {t('slow')}
                     </div>
                 </div>
@@ -132,14 +132,14 @@ export default function FieldDataBadges({ fieldData }: FieldDataBadgesProps) {
                     >
                         <div className="space-y-4 pr-6">
                             <div className="flex items-center gap-3">
-                                <div className="p-1.5 rounded-md bg-[#0f172a] text-slate-500">
+                                <div className="p-1.5 rounded-md premium-surface text-stone-600">
                                     {metric.icon}
                                 </div>
-                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8]">{metric.label}</h4>
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{metric.label}</h4>
                             </div>
 
                             <div className="space-y-1">
-                                <div className="text-3xl font-semibold tracking-tight text-white">
+                                <div className="text-3xl font-semibold tracking-tight text-stone-900">
                                     {metric.value}
                                 </div>
                                 <div className={`text-[10px] font-bold uppercase tracking-widest ${metric.status === 'FAST' || metric.status === 'GOOD' ? 'text-emerald-500' : metric.status === 'AVERAGE' || metric.status === 'NEEDS_IMPROVEMENT' ? 'text-amber-500' : 'text-rose-500'}`}>
@@ -147,13 +147,13 @@ export default function FieldDataBadges({ fieldData }: FieldDataBadgesProps) {
                                 </div>
                             </div>
 
-                            <p className="text-xs text-slate-400 leading-relaxed">
+                            <p className="text-xs text-stone-400 leading-relaxed">
                                 {metric.desc}
                             </p>
                         </div>
 
                         <div className="flex flex-col gap-1 items-end pt-2 shrink-0">
-                            <div className="h-24 w-1.5 rounded-full bg-[#0f172a] overflow-hidden flex flex-col-reverse">
+                            <div className="h-24 w-1.5 rounded-full bg-stone-200 overflow-hidden flex flex-col-reverse">
                                 {metric.distributions.map((d: any, idx: number) => (
                                     <div
                                         key={idx}
@@ -177,8 +177,8 @@ export default function FieldDataBadges({ fieldData }: FieldDataBadgesProps) {
                         )}
                     </div>
                     <div className="space-y-1">
-                        <h4 className="text-lg font-bold text-white">{t('verdictTitle')}</h4>
-                        <p className="text-slate-400 text-sm">
+                        <h4 className="text-lg font-bold text-stone-800">{t('verdictTitle')}</h4>
+                        <p className="text-stone-500 text-sm">
                             {t('verdictPassed', fieldData.overall_category === "FAST")}
                         </p>
                     </div>

@@ -66,12 +66,12 @@ export default function FrustrationIndex({ cls, tbt }: FrustrationIndexProps) {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div className="space-y-1">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-sky-400">
+                        <div className="p-2 rounded-lg bg-stone-100 border border-stone-200 text-stone-600">
                             <AlertTriangle className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <h3 className="text-2xl md:text-3xl font-bold text-white tracking-tight">{t('rageMeterTitle')}</h3>
+                        <h3 className="text-2xl md:text-3xl font-bold text-stone-900 tracking-tight">{t('rageMeterTitle')}</h3>
                     </div>
-                    <p className="text-slate-400 text-sm md:text-base ml-12">
+                    <p className="text-stone-400 text-sm md:text-base ml-12">
                         {t('rageMeterSubtitle')}
                     </p>
                 </div>
@@ -84,8 +84,8 @@ export default function FrustrationIndex({ cls, tbt }: FrustrationIndexProps) {
                     style={{ backgroundColor: status.glowColor }}
                 />
                 
-                <div className="relative card overflow-hidden bg-[#1e293b]/30 backdrop-blur-xl border-white/10 p-1 md:p-2 rounded-[2rem]">
-                    <div className="bg-[#0f172a]/80 rounded-[1.8rem] p-6 md:p-10">
+                <div className="relative card overflow-hidden bg-white/50 backdrop-blur-xl p-1 md:p-2 rounded-[2rem]">
+                    <div className="bg-white/70 rounded-[1.8rem] p-6 md:p-10">
                         <div className="flex flex-col md:flex-row gap-12 items-center">
                             
                             {/* Score Display */}
@@ -102,7 +102,7 @@ export default function FrustrationIndex({ cls, tbt }: FrustrationIndexProps) {
                                         }}
                                         className="relative z-10"
                                     >
-                                        <div className="p-6 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+                                        <div className="p-6 rounded-full bg-stone-100 border border-stone-200 backdrop-blur-md">
                                             {status.emoji}
                                         </div>
                                     </motion.div>
@@ -119,7 +119,7 @@ export default function FrustrationIndex({ cls, tbt }: FrustrationIndexProps) {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.4 }}
-                                        className="text-5xl md:text-6xl font-black text-white"
+                                        className="text-5xl md:text-6xl font-black text-stone-900"
                                     >
                                         {score}<span className="text-lg font-medium opacity-40 ml-1">%</span>
                                     </motion.div>
@@ -138,10 +138,10 @@ export default function FrustrationIndex({ cls, tbt }: FrustrationIndexProps) {
                             <div className="md:w-2/3 w-full space-y-8">
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                                        <span className="text-xs font-bold uppercase tracking-widest text-stone-400">
                                             {t('rageIndexLabel')}
                                         </span>
-                                        <span className="text-xs font-mono text-slate-500">
+                                        <span className="text-xs font-mono text-stone-400">
                                             {score} / 100
                                         </span>
                                     </div>
@@ -159,7 +159,7 @@ export default function FrustrationIndex({ cls, tbt }: FrustrationIndexProps) {
                                                         scaleY: isActive ? 1 : 0.8 
                                                     }}
                                                     transition={{ delay: i * 0.03 }}
-                                                    className={`flex-1 rounded-full ${isActive ? status.color : 'bg-slate-700'}`}
+                                                    className={`flex-1 rounded-full ${isActive ? status.color : 'bg-stone-200'}`}
                                                 />
                                             );
                                         })}
@@ -170,12 +170,12 @@ export default function FrustrationIndex({ cls, tbt }: FrustrationIndexProps) {
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: 0.6 }}
-                                    className="p-5 rounded-2xl bg-white/5 border border-white/5 space-y-3"
+                                    className="p-5 rounded-2xl bg-stone-50 border border-stone-200 space-y-3"
                                 >
-                                    <p className="text-slate-300 text-sm md:text-base leading-relaxed font-medium">
+                                    <p className="text-stone-700 text-sm md:text-base leading-relaxed font-medium">
                                         {status.desc}
                                     </p>
-                                    <p className="text-slate-500 text-xs md:text-sm italic">
+                                    <p className="text-stone-400 text-xs md:text-sm italic">
                                         {t('frustrationDesc') || "This metric correlates visual stability and input lag to estimate user satisfaction."}
                                     </p>
                                 </motion.div>
@@ -183,12 +183,12 @@ export default function FrustrationIndex({ cls, tbt }: FrustrationIndexProps) {
                                 {/* Metrics Breakdown */}
                                 <div className="grid grid-cols-2 gap-6 pt-4">
                                     <div className="space-y-3">
-                                        <div className="flex items-center gap-2 text-slate-500">
-                                            <Layout size={14} className="text-sky-400" />
+                                        <div className="flex items-center gap-2 text-stone-400">
+                                            <Layout size={14} className="text-stone-500" />
                                             <span className="text-[10px] font-bold uppercase tracking-widest">Layout Instability</span>
                                         </div>
                                         <div className="flex items-end gap-2">
-                                            <div className="text-2xl font-bold text-white leading-none">{cls.toFixed(3)}</div>
+                                            <div className="text-2xl font-bold text-stone-900 leading-none">{cls.toFixed(3)}</div>
                                             <div className={`text-[10px] font-bold mb-1 ${cls > 0.1 ? 'text-rose-400' : 'text-emerald-400'}`}>
                                                 {cls > 0.1 ? t('statusCritical') : t('statusExcellent')}
                                             </div>
@@ -196,12 +196,12 @@ export default function FrustrationIndex({ cls, tbt }: FrustrationIndexProps) {
                                     </div>
                                     
                                     <div className="space-y-3">
-                                        <div className="flex items-center gap-2 text-slate-500">
+                                        <div className="flex items-center gap-2 text-stone-400">
                                             <Zap size={14} className="text-amber-400" />
                                             <span className="text-[10px] font-bold uppercase tracking-widest">Input Delay</span>
                                         </div>
                                         <div className="flex items-end gap-2">
-                                            <div className="text-2xl font-bold text-white leading-none">{Math.round(tbt)}ms</div>
+                                            <div className="text-2xl font-bold text-stone-900 leading-none">{Math.round(tbt)}ms</div>
                                             <div className={`text-[10px] font-bold mb-1 ${tbt > 200 ? 'text-rose-400' : 'text-emerald-400'}`}>
                                                 {tbt > 200 ? t('statusCritical') : t('statusExcellent')}
                                             </div>

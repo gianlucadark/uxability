@@ -46,19 +46,19 @@ export default function MainThreadBreakdown({ items }: MainThreadBreakdownProps)
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-white">
+                        <div className="p-2 rounded-lg bg-stone-100 border border-stone-200 text-stone-600">
                             <Cpu className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <h3 className="text-xl md:text-2xl font-bold text-white">{t('mainThreadTitle')}</h3>
+                        <h3 className="text-xl md:text-2xl font-bold text-stone-800">{t('mainThreadTitle')}</h3>
                     </div>
-                    <p className="text-zinc-400 font-medium text-xs md:text-sm">
+                    <p className="text-stone-400 font-medium text-xs md:text-sm">
                         {t('mainThreadSubtitle')}
                     </p>
                 </div>
 
                 <div className="flex flex-col items-start md:items-end">
-                    <div className="text-3xl md:text-4xl font-bold tracking-tight text-white">{formatDuration(totalDuration)}</div>
-                    <div className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mt-1">Tempo Totale CPU</div>
+                    <div className="text-3xl md:text-4xl font-bold tracking-tight text-stone-900">{formatDuration(totalDuration)}</div>
+                    <div className="text-[10px] uppercase font-bold tracking-widest text-stone-400 mt-1">Tempo Totale CPU</div>
                 </div>
             </div>
 
@@ -89,20 +89,20 @@ export default function MainThreadBreakdown({ items }: MainThreadBreakdownProps)
                             }, { offset: 0, segments: [] }).segments}
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                            <Cpu size={20} className="text-slate-500 mb-1" />
+                            <Cpu size={20} className="text-stone-400 mb-1" />
                         </div>
                     </div>
 
                     <div className="flex-grow w-full space-y-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                             {items.slice(0, 4).map((item, i) => (
-                                <div key={`${item.group}-${i}`} className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl border border-[#334155] hover:border-[#475569] transition-all bg-[#0f172a]">
+                                <div key={`${item.group}-${i}`} className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl border border-stone-200 hover:border-stone-300 transition-all bg-stone-50">
                                     <div className={`${getGroupColor(item.group).replace('bg-', 'text-')} opacity-80`}>
                                         {getIcon(item.group)}
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{t(item.group) || item.groupLabel}</span>
-                                        <span className="text-sm font-bold text-white">{formatDuration(item.duration)}</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{t(item.group) || item.groupLabel}</span>
+                                        <span className="text-sm font-bold text-stone-800">{formatDuration(item.duration)}</span>
                                     </div>
                                 </div>
                             ))}
@@ -113,22 +113,22 @@ export default function MainThreadBreakdown({ items }: MainThreadBreakdownProps)
                 {/* Additional Stats - Dynamic Bento Items */}
                 <div className="md:col-span-12 grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="card p-6 flex flex-col items-center justify-center text-center space-y-2">
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{t('scriptEvaluation')}</div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{t('scriptEvaluation')}</div>
                         <div className="text-2xl font-bold tracking-tight text-rose-500">
                             {((items.find(i => i.group === 'scriptEvaluation')?.duration || 0) / totalDuration * 100).toFixed(1)}%
                         </div>
                     </div>
 
                     <div className="card p-6 flex flex-col items-center justify-center text-center space-y-2">
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{t('styleLayout')}</div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{t('styleLayout')}</div>
                         <div className="text-2xl font-bold tracking-tight text-emerald-500">
                             {((items.find(i => i.group === 'layout')?.duration || 0) / totalDuration * 100).toFixed(1)}%
                         </div>
                     </div>
 
                     <div className="card p-6 flex flex-col items-center justify-center text-center space-y-2">
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Totale CPU Time</div>
-                        <div className="text-2xl font-bold tracking-tight text-white">
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Totale CPU Time</div>
+                        <div className="text-2xl font-bold tracking-tight text-stone-900">
                             {formatDuration(totalDuration)}
                         </div>
                     </div>

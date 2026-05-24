@@ -44,19 +44,19 @@ export default function ResourceBreakdown({ resources }: ResourceBreakdownProps)
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-white">
+                        <div className="p-2 rounded-lg bg-stone-100 border border-stone-200 text-stone-600">
                             <Wifi className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <h3 className="text-xl md:text-2xl font-bold text-white">{t('resourceTitle')}</h3>
+                        <h3 className="text-xl md:text-2xl font-bold text-stone-800">{t('resourceTitle')}</h3>
                     </div>
-                    <p className="text-slate-400 font-medium text-xs md:text-sm">
+                    <p className="text-stone-400 font-medium text-xs md:text-sm">
                         {t('resourceSubtitle')}
                     </p>
                 </div>
 
                 <div className="flex flex-col items-start md:items-end">
-                    <div className="text-3xl md:text-4xl font-bold tracking-tight text-white">{formatSize(totalSize)}</div>
-                    <div className="text-[10px] uppercase font-bold tracking-widest text-[#94a3b8] mt-1">{t('totalWeight')}</div>
+                    <div className="text-3xl md:text-4xl font-bold tracking-tight text-stone-900">{formatSize(totalSize)}</div>
+                    <div className="text-[10px] uppercase font-bold tracking-widest text-stone-400 mt-1">{t('totalWeight')}</div>
                 </div>
             </div>
 
@@ -65,12 +65,12 @@ export default function ResourceBreakdown({ resources }: ResourceBreakdownProps)
                 <div className="md:col-span-12 card p-6 md:p-8 flex flex-col justify-center">
                     <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-2">
-                            <Layers size={16} className="text-[#94a3b8]" />
-                            <span className="text-xs font-bold uppercase tracking-widest text-slate-500">{t('resourceBreakdown')}</span>
+                            <Layers size={16} className="text-stone-400" />
+                            <span className="text-xs font-bold uppercase tracking-widest text-stone-400">{t('resourceBreakdown')}</span>
                         </div>
                     </div>
 
-                    <div className="h-4 md:h-6 w-full flex rounded-full overflow-hidden bg-[#0f172a]">
+                    <div className="h-4 md:h-6 w-full flex rounded-full overflow-hidden bg-stone-200">
                         {formatted.map((res, i) => (
                             <div
                                 key={`${res.resourceType}-${i}`}
@@ -84,7 +84,7 @@ export default function ResourceBreakdown({ resources }: ResourceBreakdownProps)
                         {formatted.slice(0, 5).map((res, i) => (
                             <div key={`${res.resourceType}-label-${i}`} className="flex items-center gap-2">
                                 <div className={`w-2.5 h-2.5 rounded-full ${getTypeColor(res.resourceType)}`} />
-                                <span className="text-[10px] md:text-[11px] font-semibold uppercase tracking-widest text-slate-400">{t(res.resourceType) || res.label}</span>
+                                <span className="text-[10px] md:text-[11px] font-semibold uppercase tracking-widest text-stone-400">{t(res.resourceType) || res.label}</span>
                             </div>
                         ))}
                     </div>
@@ -94,18 +94,18 @@ export default function ResourceBreakdown({ resources }: ResourceBreakdownProps)
                 {formatted.slice(0, 4).map((res, i) => (
                     <div
                         key={`${res.resourceType}-card-${i}`}
-                        className="md:col-span-3 card p-5 border border-[#334155] flex flex-col justify-between min-h-[120px]"
+                        className="md:col-span-3 card p-5 flex flex-col justify-between min-h-[120px]"
                     >
-                        <div className="flex justify-between items-start text-slate-500">
+                        <div className="flex justify-between items-start text-stone-400">
                             {res.resourceType === 'script' ? <FileCode size={18} /> :
                                 res.resourceType === 'image' ? <ImageIcon size={18} /> :
                                     res.resourceType === 'stylesheet' ? <FileText size={18} /> : <Layers size={18} />}
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-[#64748b]">{res.requestCount} {t('requests').toLowerCase()}</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{res.requestCount} {t('requests').toLowerCase()}</span>
                         </div>
 
                         <div className="space-y-1">
-                            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t(res.resourceType) || res.label}</div>
-                            <div className="text-xl font-bold tracking-tight text-white">{formatSize(res.transferSize)}</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{t(res.resourceType) || res.label}</div>
+                            <div className="text-xl font-bold tracking-tight text-stone-900">{formatSize(res.transferSize)}</div>
                         </div>
                     </div>
                 ))}

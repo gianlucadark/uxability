@@ -28,15 +28,15 @@ interface PrivacyScoreProps {
 }
 
 const CATEGORY_META: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
-  advertising: { icon: Megaphone,  color: "#f43f5e", bg: "#f43f5e15" },
-  analytics:   { icon: BarChart3,  color: "#fbbf24", bg: "#fbbf2415" },
-  functional:  { icon: Wrench,     color: "#60a5fa", bg: "#60a5fa15" },
-  consent:     { icon: Cookie,     color: "#10b981", bg: "#10b98115" },
+  advertising: { icon: Megaphone,  color: "#bd3150", bg: "#f4dde3" },
+  analytics:   { icon: BarChart3,  color: "#b7791f", bg: "#f6ead2" },
+  functional:  { icon: Wrench,     color: "#3f6f8f", bg: "#deebf0" },
+  consent:     { icon: Cookie,     color: "#0f8f68", bg: "#dff3ea" },
   cdn:         { icon: CheckCircle2, color: "#6b7280", bg: "#6b728015" },
 };
 
 function gradeColor(grade: string) {
-  return { A: "#10b981", B: "#34d399", C: "#fbbf24", D: "#f97316", F: "#f43f5e" }[grade] ?? "#6b7280";
+  return { A: "#0f8f68", B: "#2f9f78", C: "#b7791f", D: "#a66b22", F: "#bd3150" }[grade] ?? "#756d64";
 }
 
 export default function PrivacyScore({ result }: PrivacyScoreProps) {
@@ -76,22 +76,16 @@ export default function PrivacyScore({ result }: PrivacyScoreProps) {
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="card p-6 md:p-8 relative overflow-hidden"
+      className="card p-4 md:p-5 relative overflow-hidden"
     >
-      {/* Background glow */}
-      <div
-        className="absolute -top-16 -left-16 w-56 h-56 rounded-full blur-3xl pointer-events-none"
-        style={{ background: bg }}
-      />
-
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 rounded-lg bg-white/5 border border-white/10" style={{ color }}>
+      <div className="flex items-center gap-3 mb-3">
+        <div className="p-2 rounded-lg icon-tile" style={{ color }}>
           {grade === "F" || grade === "D" ? <ShieldAlert className="w-5 h-5" /> : <Shield className="w-5 h-5" />}
         </div>
         <div>
-          <h3 className="text-xl font-bold text-white">{t("privacyTitle")}</h3>
-          <p className="text-sm text-slate-400">{t("privacySubtitle")}</p>
+          <h3 className="text-lg md:text-xl font-bold text-stone-900">{t("privacyTitle")}</h3>
+          <p className="text-sm leading-snug text-stone-600">{t("privacySubtitle")}</p>
         </div>
         <span
           className="ml-auto px-2 py-0.5 text-xs font-semibold rounded-full border"
@@ -108,13 +102,13 @@ export default function PrivacyScore({ result }: PrivacyScoreProps) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-[180px_minmax(0,1fr)] gap-4 items-start">
         {/* Grade card */}
-        <div className="flex flex-col items-center justify-center p-6 rounded-xl border border-white/5 bg-white/[0.03] gap-1">
+        <div className="flex w-full flex-col items-center p-3 md:p-4 rounded-xl premium-surface gap-0.5 self-start">
           {/* Circular SVG */}
-          <div className="relative w-24 h-24">
+          <div className="relative w-20 h-20 md:w-24 md:h-24">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="42" fill="none" stroke="#ffffff08" strokeWidth="10" />
+              <circle cx="50" cy="50" r="42" fill="none" stroke="#e7e5e4" strokeWidth="10" />
               <motion.circle
                 cx="50" cy="50" r="42"
                 fill="none"
@@ -129,27 +123,27 @@ export default function PrivacyScore({ result }: PrivacyScoreProps) {
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-2xl font-black" style={{ color }}>{grade}</span>
-              <span className="text-xs text-slate-400">{privacyScore}/100</span>
+              <span className="text-xs text-stone-400">{privacyScore}/100</span>
             </div>
           </div>
 
           {/* Consent badge */}
           <div className={`mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${
             consentDetected
-              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-              : "border-white/10 bg-white/5 text-slate-500"
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"
+              : "border-stone-200 bg-stone-100 text-stone-400"
           }`}>
             <Cookie size={11} />
             {consentDetected ? t("privacyConsentYes") : t("privacyConsentNo")}
           </div>
 
-          <div className="text-xs text-slate-500 mt-2 text-center">
+          <div className="text-xs text-stone-400 mt-2 text-center">
             {thirdPartyDomains} {t("privacyThirdParty")}
           </div>
         </div>
 
         {/* Tracker breakdown */}
-        <div className="md:col-span-2 flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-3">
           {/* Summary pills */}
           <div className="flex flex-wrap gap-2">
             {[
@@ -177,11 +171,11 @@ export default function PrivacyScore({ result }: PrivacyScoreProps) {
 
           {/* Score bar */}
           <div>
-            <div className="flex justify-between text-xs text-slate-400 mb-2">
+            <div className="flex justify-between text-xs text-stone-400 mb-2">
               <span>{t("privacyScoreLabel")}</span>
               <span style={{ color }}>{privacyScore}/100</span>
             </div>
-            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+            <div className="h-2 bg-stone-200 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${barPercent}%` }}
@@ -194,14 +188,14 @@ export default function PrivacyScore({ result }: PrivacyScoreProps) {
 
           {/* No trackers message or expand button */}
           {displayedTrackers.length === 0 ? (
-            <div className="flex items-center gap-2 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-400">
+            <div className="flex items-center gap-2 p-3 md:p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-400">
               <CheckCircle2 size={16} />
               {t("privacyNoTrackers")}
             </div>
           ) : (
             <button
               onClick={() => setExpanded((v) => !v)}
-              className="flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors self-start"
+              className="flex items-center gap-2 text-xs text-stone-400 hover:text-stone-800 transition-colors self-start"
             >
               {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               {expanded ? t("privacyHideTrackers") : t("privacyShowTrackers", displayedTrackers.length)}
@@ -245,7 +239,7 @@ export default function PrivacyScore({ result }: PrivacyScoreProps) {
             )}
           </AnimatePresence>
 
-          <p className="text-xs text-slate-600 leading-relaxed">{t("privacyTip")}</p>
+          <p className="text-xs text-stone-400 leading-relaxed">{t("privacyTip")}</p>
         </div>
       </div>
     </motion.div>

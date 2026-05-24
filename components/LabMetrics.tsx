@@ -75,12 +75,12 @@ export default function LabMetrics({ metrics }: LabMetricsProps) {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-white">
+                        <div className="p-2 rounded-lg bg-stone-100 border border-stone-200 text-stone-600">
                             <Thermometer className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <h3 className="text-xl md:text-2xl font-bold text-white">{t('labMetricsTitle')}</h3>
+                        <h3 className="text-xl md:text-2xl font-bold text-stone-800">{t('labMetricsTitle')}</h3>
                     </div>
-                    <p className="text-slate-500 font-medium text-xs md:text-sm">
+                    <p className="text-stone-400 font-medium text-xs md:text-sm">
                         {t('labMetricsSubtitle')}
                     </p>
                 </div>
@@ -93,18 +93,18 @@ export default function LabMetrics({ metrics }: LabMetricsProps) {
                         className="card p-6 flex flex-col justify-between"
                     >
                         <div className="flex items-center justify-between mb-4">
-                            <div className="p-2 rounded-md bg-[#020617] text-sky-400">
+                            <div className="p-2 rounded-md bg-stone-100 text-stone-500">
                                 {item.icon}
                             </div>
-                            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{item.title}</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{item.title}</div>
                         </div>
 
                         <div className="space-y-1 mb-4">
-                            <h4 className="text-2xl md:text-3xl font-bold tracking-tight text-white">{item.value}</h4>
-                            <div className="text-xs font-semibold text-slate-400">{item.label}</div>
+                            <h4 className="text-2xl md:text-3xl font-bold tracking-tight text-stone-900">{item.value}</h4>
+                            <div className="text-xs font-semibold text-stone-400">{item.label}</div>
                         </div>
 
-                        <p className="text-xs text-slate-500 leading-relaxed pt-4 border-t border-[#1e293b]">
+                        <p className="text-xs text-stone-400 leading-relaxed pt-4 border-t border-stone-200">
                             {item.desc}
                         </p>
                     </div>
@@ -112,8 +112,8 @@ export default function LabMetrics({ metrics }: LabMetricsProps) {
             </div>
 
             <div className="flex justify-center pt-4">
-                <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/5 border border-white/5 text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                    <HelpCircle size={14} className="text-cyan-400" />
+                <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-stone-100 border border-stone-200 text-[10px] text-stone-400 font-bold uppercase tracking-widest">
+                    <HelpCircle size={14} className="text-stone-400" />
                     {t('labMetricsFooter')}
                 </div>
             </div>

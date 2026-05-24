@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Search, Globe } from "lucide-react";
 
 interface SearchPreviewProps {
@@ -28,21 +27,21 @@ export default function SearchPreview({ url, metadata }: SearchPreviewProps) {
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-white">
+                <div className="p-2 rounded-lg icon-tile">
                     <Search className="w-5 h-5 md:w-6 md:h-6" />
                 </div>
                 <div>
-                    <h3 className="text-xl md:text-2xl font-bold text-white">{t('searchPreviewTitle')}</h3>
-                    <p className="text-slate-500 text-xs md:text-sm font-medium">{t('searchPreviewSubtitle')}</p>
+                    <h3 className="text-xl md:text-2xl font-bold text-stone-900">{t('searchPreviewTitle')}</h3>
+                    <p className="text-stone-600 text-xs md:text-sm font-medium">{t('searchPreviewSubtitle')}</p>
                 </div>
             </div>
 
             <div className="card p-6 md:p-10 space-y-8">
-                <div className="max-w-2xl bg-white rounded-2xl p-6 shadow-xl overflow-hidden group">
+                <div className="max-w-2xl bg-white rounded-2xl p-6 shadow-xl shadow-stone-900/10 border border-stone-200 overflow-hidden group">
                     {/* Google Style Result */}
                     <div className="space-y-2">
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                            <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-500">
                                 <Globe size={16} />
                             </div>
                             <div className="flex flex-col">
@@ -61,13 +60,13 @@ export default function SearchPreview({ url, metadata }: SearchPreviewProps) {
                     </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-5 bg-[#1e293b] border border-[#334155] rounded-xl">
-                    <div className="shrink-0 p-2 rounded-lg bg-[#1e293b] text-slate-500">
+                <div className="flex items-start gap-4 p-5 premium-surface rounded-xl">
+                    <div className="shrink-0 p-2 rounded-lg bg-stone-100 text-stone-600">
                         <Globe size={18} />
                     </div>
                     <div className="space-y-1">
-                        <p className="text-sm font-bold text-white opacity-90">{t('metaTagOptimization')}</p>
-                        <p className="text-xs text-slate-400 leading-relaxed">
+                        <p className="text-sm font-bold text-stone-900">{t('metaTagOptimization')}</p>
+                        <p className="text-xs text-stone-600 leading-relaxed">
                             {t('metaTagOptimizationDesc')}
                         </p>
                     </div>
