@@ -807,6 +807,89 @@ body::after {
   color: var(--graphite-500);
 }
 
+.hero-headline {
+  padding: 0.04em 0.11em 0.14em;
+  line-height: 0.9;
+  text-shadow:
+    0 18px 34px rgba(32, 28, 24, 0.12),
+    0 1px 0 rgba(255, 250, 241, 0.72);
+}
+
+.hero-headline__aura {
+  position: absolute;
+  left: 50%;
+  bottom: 0.1em;
+  z-index: 0;
+  width: 106%;
+  height: 0.54em;
+  transform: translateX(-50%) skewX(-8deg);
+  border: 1px solid rgba(32, 28, 24, 0.08);
+  background:
+    linear-gradient(90deg, transparent 0 4%, rgba(212, 185, 140, 0.84) 4% 90%, transparent 90% 100%),
+    linear-gradient(180deg, rgba(255, 250, 241, 0.6), rgba(212, 185, 140, 0.18));
+  box-shadow:
+    0 12px 28px rgba(212, 185, 140, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.68);
+}
+
+.hero-headline__text {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 0.07em;
+}
+
+.hero-headline__text::before,
+.hero-headline__text::after {
+  content: '';
+  position: absolute;
+  width: 0.24em;
+  height: 0.24em;
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+.hero-headline__text::before {
+  left: -0.14em;
+  top: 0.04em;
+  border-top: 0.035em solid rgba(32, 28, 24, 0.5);
+  border-left: 0.035em solid rgba(32, 28, 24, 0.5);
+}
+
+.hero-headline__text::after {
+  right: -0.14em;
+  bottom: 0.08em;
+  border-right: 0.035em solid rgba(212, 185, 140, 0.9);
+  border-bottom: 0.035em solid rgba(212, 185, 140, 0.9);
+}
+
+.hero-headline__line {
+  display: block;
+}
+
+.hero-headline__accent {
+  position: relative;
+  display: inline-block;
+  margin-top: 0.01em;
+  padding: 0.07em 0.18em 0.09em;
+  border: 1px solid rgba(255, 250, 241, 0.22);
+  border-radius: 0.08em;
+  color: #fffdf8;
+  background:
+    linear-gradient(90deg, rgba(212, 185, 140, 0.16) 0 1px, transparent 1px 0.2em),
+    linear-gradient(180deg, rgba(255, 250, 241, 0.08), transparent 42%),
+    linear-gradient(135deg, #211c17, #090806 76%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 250, 241, 0.24),
+    inset 0 -0.08em 0 rgba(212, 185, 140, 0.16),
+    0 0.18em 0 rgba(32, 28, 24, 0.12),
+    0 0.34em 0.56em rgba(32, 28, 24, 0.2);
+  text-shadow:
+    0 1px 0 rgba(255, 250, 241, 0.1),
+    0 0.06em 0.12em rgba(0, 0, 0, 0.34);
+}
+
 .icon-tile {
   background: linear-gradient(145deg, var(--card-solid), #eee7dc);
   border: 1px solid rgba(32, 28, 24, 0.12);
@@ -1036,6 +1119,10 @@ body::after {
   .scan-chip {
     padding-inline: 5px;
     font-size: 0.56rem;
+  }
+
+  .hero-headline {
+    line-height: 0.92;
   }
 }
 

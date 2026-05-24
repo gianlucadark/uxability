@@ -24,6 +24,22 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useLanguage } from "@/context/LanguageContext";
 
+const emptyAeoSignals = {
+  schema: 0,
+  headings: 0,
+  semantic: 0,
+  metaDesc: 0,
+  qa: 0,
+  chunks: 0,
+  definitions: 0,
+  answerFirst: 0,
+  author: 0,
+  datePublished: 0,
+  citations: 0,
+  llmsTxt: 0,
+  faqSchema: 0,
+};
+
 export default function Home() {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -88,9 +104,12 @@ export default function Home() {
       }
 
       if (aeoSettled.status === "fulfilled") {
-        setAeoResult(await aeoSettled.value.json());
+        const aeoData = await aeoSettled.value.json();
+        setAeoResult(aeoSettled.value.ok
+          ? aeoData
+          : { error: aeoData.error || "fetch_failed", aeo: 0, structureScore: 0, contentScore: 0, authorityScore: 0, signals: emptyAeoSignals });
       } else {
-        setAeoResult({ error: "fetch_failed", aeo: 0, structureScore: 0, contentScore: 0, authorityScore: 0, signals: {} });
+        setAeoResult({ error: "fetch_failed", aeo: 0, structureScore: 0, contentScore: 0, authorityScore: 0, signals: emptyAeoSignals });
       }
 
       if (privacySettled.status === "fulfilled") {
@@ -780,11 +799,12 @@ export default function Home() {
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative inline-block text-5xl md:text-8xl font-extrabold tracking-tighter mb-6 text-[var(--graphite-950)] pb-3 drop-shadow-[0_10px_24px_rgba(32,28,24,0.12)]"
+            className="hero-headline relative inline-block text-5xl md:text-8xl font-extrabold tracking-tighter mb-6 text-[var(--graphite-950)]"
           >
-            <span className="absolute left-1/2 bottom-3 h-3 w-[92%] -translate-x-1/2 rounded-full bg-[var(--champagne)]/35 blur-sm" aria-hidden="true" />
-            <span className="relative">
-            MAKE THE WEB<br />READABLE.
+            <span className="hero-headline__aura" aria-hidden="true" />
+            <span className="hero-headline__text">
+              <span className="hero-headline__line">MAKE THE WEB</span>
+              <span className="hero-headline__accent">READABLE.</span>
             </span>
           </motion.h1>
           <motion.p
