@@ -141,25 +141,9 @@ export default function AEOScore({ result }: AEOScoreProps) {
                             : t("aeo_ai_role_body")}
                     </p>
                     {!compact && (
-                        <>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                                <div className="rounded-lg bg-white/55 border border-stone-200/80 p-3">
-                                    <div className="text-lg font-black text-stone-900">65%</div>
-                                    <p className="mt-1 text-[11px] leading-relaxed text-stone-500">
-                                        {t("aeo_ai_role_high_weight")}
-                                    </p>
-                                </div>
-                                <div className="rounded-lg bg-white/55 border border-stone-200/80 p-3">
-                                    <div className="text-lg font-black text-stone-900">25%</div>
-                                    <p className="mt-1 text-[11px] leading-relaxed text-stone-500">
-                                        {t("aeo_ai_role_low_weight")}
-                                    </p>
-                                </div>
-                            </div>
-                            <p className="text-[11px] leading-relaxed text-stone-500 italic">
-                                {result.aiEnhanced ? t("aeo_ai_role_active_desc") : t("aeo_ai_role_fallback_desc")}
-                            </p>
-                        </>
+                        <p className="text-[11px] leading-relaxed text-stone-500 italic">
+                            {result.aiEnhanced ? t("aeo_ai_role_active_desc") : t("aeo_ai_role_fallback_desc")}
+                        </p>
                     )}
                 </div>
             </div>
