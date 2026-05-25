@@ -15,9 +15,11 @@ import ResourceBreakdown from "@/components/ResourceBreakdown";
 import MainThreadBreakdown from "@/components/MainThreadBreakdown";
 import LabMetrics from "@/components/LabMetrics";
 import AIRecommendation from "@/components/AIRecommendation";
+import FixPlan from "@/components/FixPlan";
 import FrustrationIndex from "@/components/FrustrationIndex";
 import SocialPreview from "@/components/SocialPreview";
 import AEOScore from "@/components/AEOScore";
+import LLMsTxtGenerator from "@/components/LLMsTxtGenerator";
 import CarbonScore from "@/components/CarbonScore";
 import PrivacyScore from "@/components/PrivacyScore";
 import ParticleWord from "@/components/ParticleWord";
@@ -1093,11 +1095,26 @@ export default function Home() {
               {/* AEO Score */}
               <AEOScore result={aeoResult} />
 
+              {/* llms.txt Generator */}
+              {aeoResult && (
+                <LLMsTxtGenerator
+                  results={results}
+                  llmsTxtScore={aeoResult.signals?.llmsTxt ?? 0}
+                />
+              )}
+
               {/* Carbon Footprint */}
               <CarbonScore resourceSummary={currentResult.resourceSummary} />
 
               {/* Privacy & Tracker Score */}
               <PrivacyScore result={privacyResult} />
+
+              {/* Actionable Fix Plan */}
+              <FixPlan
+                result={currentResult}
+                aeoResult={aeoResult}
+                privacyResult={privacyResult}
+              />
               
               {/* 1. Core Visuals & Real World Experience */}
               <div className="space-y-16">

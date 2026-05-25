@@ -340,7 +340,10 @@ async function computeAEO(url: string): Promise<AEOResult> {
             headers: { "User-Agent": "Mozilla/5.0 (compatible; UXAbility/1.0; +https://uxability.vercel.app)" },
             signal: AbortSignal.timeout(12000),
         }),
-        fetch(`${origin}/llms.txt`, { signal: AbortSignal.timeout(5000) }),
+        fetch(`${origin}/llms.txt`, {
+            headers: { "User-Agent": "Mozilla/5.0 (compatible; UXAbility/1.0; +https://uxability.vercel.app)" },
+            signal: AbortSignal.timeout(5000),
+        }),
     ]);
 
     if (htmlResult.status === "rejected" || !htmlResult.value.ok) {
@@ -351,7 +354,15 @@ async function computeAEO(url: string): Promise<AEOResult> {
     const $ = cheerio.load(html);
     const htmlLower = html.toLowerCase();
     const bodyText = normalizeText($.text());
-    const llmsTxtScore = llmsResult.status === "fulfilled" && llmsResult.value.ok ? 100 : 0;
+
+    let llmsTxtScore = 0;
+    if (llmsResult.status === "fulfilled" && llmsResult.value.ok) {
+        const llmsBody = await llmsResult.value.text();
+        // Reject soft-404s: must not be HTML and must contain meaningful text content
+        const isHtml = llmsBody.trimStart().startsWith("<") || /<html[\s>]/i.test(llmsBody);
+        const hasContent = llmsBody.trim().length > 20;
+        if (!isHtml && hasContent) llmsTxtScore = 100;
+    }
 
     const parsedJsonLd = $('script[type="application/ld+json"]').toArray().flatMap((el) => {
         try {

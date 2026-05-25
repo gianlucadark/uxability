@@ -302,6 +302,22 @@ export const translations = {
         privacyShowTrackers: (n: number) => `Mostra ${n} tracker rilevati`,
         privacyHideTrackers: "Nascondi tracker",
         privacyTip: "I tracker pubblicitari penalizzano la privacy degli utenti e possono rallentare il sito. Valuta di consolidare le analytics e aggiungere un consent manager per essere GDPR-compliant.",
+
+        // llms.txt Generator
+        llmsTxtTitle: "llms.txt Generator",
+        llmsTxtSubtitle: "Crea il file standard per comunicare alle AI come leggere il tuo sito.",
+        llmsTxtWhatIsBody: "Il file llms.txt è uno standard emergente (proposto da Answer.AI nel 2024) che permette ai siti di comunicare direttamente ai modelli linguistici e ai motori di risposta AI — come ChatGPT, Perplexity e Claude — quali pagine indicizzare, come interpretare il contenuto e quali sezioni privilegiare nelle citazioni. È l'equivalente del robots.txt per l'era dell'intelligenza artificiale: chi lo adotta oggi si posiziona in vantaggio in un ecosistema dove la visibilità sulle AI sta diventando cruciale quanto quella su Google.",
+        llmsTxtWhatIsNote: "Lo standard è ancora in evoluzione. La specifica ufficiale è disponibile su llmstxt.org. Adottarlo oggi ti dà un vantaggio competitivo immediato poiché la maggioranza dei siti non ne è ancora a conoscenza.",
+        llmsTxtPresent: "File /llms.txt rilevato",
+        llmsTxtPresentDesc: "Il tuo sito pubblica già un file llms.txt — ottimo segnale AEO. Puoi confrontare il tuo file attuale con la versione generata qui sotto e aggiornarlo se necessario.",
+        llmsTxtNotPresent: "File /llms.txt non trovato",
+        llmsTxtNotPresentDesc: "Il tuo sito non pubblica ancora un file llms.txt. Scarica il file generato e caricalo nella root del server (es. esempio.com/llms.txt) per migliorare il segnale di Autorevolezza nell'AEO Score.",
+        llmsTxtGeneratorTitle: "File pronto al download",
+        llmsTxtGeneratorSubtitle: "Generato automaticamente dalle pagine analizzate. Puoi modificarlo prima di pubblicarlo.",
+        llmsTxtDownload: "Scarica llms.txt",
+        llmsTxtCopy: "Copia testo",
+        llmsTxtCopied: "Copiato!",
+        llmsTxtDeployHint: "Carica questo file nella root pubblica del tuo sito (es. /public/llms.txt o la cartella static). Non serve configurazione aggiuntiva: basta che sia raggiungibile all'URL dominio.com/llms.txt.",
     },
     en: {
         // Navbar
@@ -606,6 +622,22 @@ export const translations = {
         privacyShowTrackers: (n: number) => `Show ${n} detected trackers`,
         privacyHideTrackers: "Hide trackers",
         privacyTip: "Advertising trackers hurt user privacy and can slow down your site. Consider consolidating analytics and adding a consent manager to be GDPR-compliant.",
+
+        // llms.txt Generator
+        llmsTxtTitle: "llms.txt Generator",
+        llmsTxtSubtitle: "Create the standard file to tell AI engines how to read your site.",
+        llmsTxtWhatIsBody: "The llms.txt file is an emerging standard (proposed by Answer.AI in 2024) that lets websites communicate directly to language models and AI answer engines — like ChatGPT, Perplexity and Claude — which pages to index, how to interpret the content, and which sections to prioritize when citing sources. It's the equivalent of robots.txt for the AI era: adopting it today gives you a competitive edge in an ecosystem where AI visibility is becoming as crucial as Google ranking.",
+        llmsTxtWhatIsNote: "The standard is still evolving. The official specification is available at llmstxt.org. Adopting it now gives you an immediate advantage since the vast majority of sites are not yet aware of it.",
+        llmsTxtPresent: "/llms.txt file detected",
+        llmsTxtPresentDesc: "Your site already publishes an llms.txt file — a great AEO signal. You can compare your current file with the generated version below and update it if needed.",
+        llmsTxtNotPresent: "/llms.txt file not found",
+        llmsTxtNotPresentDesc: "Your site doesn't publish an llms.txt file yet. Download the generated file and upload it to the root of your server (e.g. example.com/llms.txt) to improve the Authority signal in your AEO Score.",
+        llmsTxtGeneratorTitle: "File ready to download",
+        llmsTxtGeneratorSubtitle: "Auto-generated from the analyzed pages. You can edit it before publishing.",
+        llmsTxtDownload: "Download llms.txt",
+        llmsTxtCopy: "Copy text",
+        llmsTxtCopied: "Copied!",
+        llmsTxtDeployHint: "Upload this file to the public root of your site (e.g. /public/llms.txt or the static folder). No additional configuration needed — it just needs to be reachable at yourdomain.com/llms.txt.",
     }
 };
 
