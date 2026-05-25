@@ -20,6 +20,7 @@ import SocialPreview from "@/components/SocialPreview";
 import AEOScore from "@/components/AEOScore";
 import CarbonScore from "@/components/CarbonScore";
 import PrivacyScore from "@/components/PrivacyScore";
+import ParticleWord from "@/components/ParticleWord";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useLanguage } from "@/context/LanguageContext";
@@ -171,6 +172,9 @@ export default function Home() {
     const aeoPdfNote = language === "it"
       ? "L'AEO misura quanto la pagina e facile da comprendere, estrarre e citare per motori di risposta AI come ChatGPT, Perplexity e Google AI."
       : "AEO measures how easy the page is for AI answer engines such as ChatGPT, Perplexity and Google AI to understand, extract and cite.";
+    const aeoAiPdfNote = language === "it"
+      ? "La metrica AI rilegge il contenuto reale della pagina dopo il controllo HTML. Quando disponibile pesa il 35% sullo score AEO finale e valuta soprattutto chiarezza semantica, risposte dirette, definizioni, autorevolezza e citabilita."
+      : "The AI metric rereads the real page content after the HTML check. When available it weighs 35% of the final AEO score and mainly evaluates semantic clarity, direct answers, definitions, authority and citability.";
     const formatBytes = (bytes: number) => (
       bytes > 1024 * 1024
         ? `${(bytes / (1024 * 1024)).toFixed(2)} MB`
@@ -348,6 +352,8 @@ export default function Home() {
     introY += 14;
     addInsightCard(t("aeoTitle"), aeoPdfNote, introY, champagne);
     introY += 44;
+    addInsightCard(t("aeo_ai_role_title"), aeoAiPdfNote, introY, success);
+    introY += 44;
 
     const introCardWidth = (pageWidth - margin * 2 - 6) / 2;
     addDefinitionCard(
@@ -372,7 +378,7 @@ export default function Home() {
       40,
       success,
     );
-    introY += 50;
+    introY += 44;
     addDefinitionCard(
       t("privacyTitle"),
       privacyPdfNote,
@@ -395,8 +401,8 @@ export default function Home() {
     addInsightCard(
       language === "it" ? "Come leggere le pagine successive" : "How to read the following pages",
       language === "it"
-        ? "Per ogni URL trovi solo i punteggi e le priorita: prima la sintesi, poi i segnali AEO, le metriche tecniche e gli interventi consigliati."
-        : "For each URL you will find only scores and priorities: summary first, then AEO signals, technical metrics and recommended actions.",
+        ? "Per ogni URL trovi prima la sintesi con lo score AEO e la metrica AI, poi i segnali AEO, le metriche tecniche e gli interventi consigliati."
+        : "For each URL you will first find the summary with AEO score and AI metric, then AEO signals, technical metrics and recommended actions.",
       introY,
       champagne,
     );
@@ -449,6 +455,10 @@ export default function Home() {
 
       if (aeoResult) {
         const aeoScore = aeoResult.aeo ?? 0;
+        const aiScore = aeoResult.aiEnhanced ? (aeoResult.aiScore ?? aeoScore) : null;
+        const aeoMetricWidth = 31;
+        const aeoMetricGap = 3;
+        const aeoMetricStartX = margin + 48;
         const accent = aeoColor(aeoScore);
         doc.setFillColor(255, 255, 255);
         doc.setDrawColor(...border);
@@ -472,30 +482,39 @@ export default function Home() {
         doc.text(sanitizePdfText(t("aeoTitle")), margin + 9, currentY + 34);
 
         addMiniMetricCard(
+          t("aeo_ai_score_label"),
+          aiScore === null ? "-" : `${aiScore}`,
+          aeoResult.aiEnhanced ? "35%" : t("aeo_ai_role_fallback_label"),
+          aeoMetricStartX,
+          currentY + 10,
+          aeoMetricWidth,
+          aiScore === null ? muted : aeoColor(aiScore),
+        );
+        addMiniMetricCard(
           t("aeo_pillar_structure"),
           `${aeoResult.structureScore ?? 0}`,
-          "35%",
-          margin + 48,
+          aeoResult.aiEnhanced ? "25%" : "35%",
+          aeoMetricStartX + (aeoMetricWidth + aeoMetricGap),
           currentY + 10,
-          35,
+          aeoMetricWidth,
           aeoColor(aeoResult.structureScore ?? 0),
         );
         addMiniMetricCard(
           t("aeo_pillar_content"),
           `${aeoResult.contentScore ?? 0}`,
-          "40%",
-          margin + 86,
+          aeoResult.aiEnhanced ? "25%" : "40%",
+          aeoMetricStartX + (aeoMetricWidth + aeoMetricGap) * 2,
           currentY + 10,
-          35,
+          aeoMetricWidth,
           aeoColor(aeoResult.contentScore ?? 0),
         );
         addMiniMetricCard(
           t("aeo_pillar_authority"),
           `${aeoResult.authorityScore ?? 0}`,
-          "25%",
-          margin + 124,
+          aeoResult.aiEnhanced ? "15%" : "25%",
+          aeoMetricStartX + (aeoMetricWidth + aeoMetricGap) * 3,
           currentY + 10,
-          35,
+          aeoMetricWidth,
           aeoColor(aeoResult.authorityScore ?? 0),
         );
 
@@ -627,8 +646,17 @@ export default function Home() {
         addPageBackground();
         currentY = 22;
         addSectionTitle(`${t("aeoTitle")} / ${t("score")}`, currentY);
+        currentY += 12;
+        addInsightCard(
+          t("aeo_ai_role_title"),
+          aeoResult.aiEnhanced ? t("aeo_ai_role_active_desc") : t("aeo_ai_role_fallback_desc"),
+          currentY,
+          aeoResult.aiEnhanced ? success : warning,
+        );
+        currentY += 44;
 
         const signalRows = [
+          [t("aeo_ai_role_title"), t("aeo_ai_score_label"), aeoResult.aiEnhanced ? (aeoResult.aiScore ?? aeoResult.aeo ?? 0) : "-"],
           [t("aeo_pillar_structure"), t("aeo_signal_schema"), aeoResult.signals.schema],
           [t("aeo_pillar_structure"), t("aeo_signal_headings"), aeoResult.signals.headings],
           [t("aeo_pillar_structure"), t("aeo_signal_semantic"), aeoResult.signals.semantic],
@@ -650,7 +678,7 @@ export default function Home() {
           body: signalRows.map(([pillar, signal, score]) => [
             sanitizePdfText(String(pillar)),
             sanitizePdfText(String(signal)),
-            `${score}/100`,
+            score === "-" ? "-" : `${score}/100`,
           ]),
           theme: "plain",
           margin: { left: margin, right: margin },
@@ -902,6 +930,7 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
+                  <ParticleWord />
                 </motion.div>
               )}
             </AnimatePresence>
