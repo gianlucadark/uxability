@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Loader2, ArrowRight, CheckCircle2, Globe, FileText, Zap, Bot, Radar } from "lucide-react";
+import { Search, Loader2, ArrowRight, CheckCircle2, Globe, FileText, Zap, Bot, Radar, Network } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CreativeBackdrop from "@/components/CreativeBackdrop";
@@ -44,6 +44,28 @@ const emptyAeoSignals = {
   faqSchema: 0,
 };
 
+function LLMsTxtSkeleton() {
+  return (
+    <div className="card p-4 md:p-5 animate-pulse" aria-label="Loading llms.txt generator">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-stone-200/80" />
+          <div className="space-y-2">
+            <div className="h-5 w-40 rounded-full bg-stone-200/80" />
+            <div className="h-3 w-64 max-w-[62vw] rounded-full bg-stone-200/80" />
+          </div>
+        </div>
+        <div className="h-9 w-28 rounded-lg bg-stone-200/80" />
+      </div>
+      <div className="mt-4 grid gap-2">
+        <div className="h-3 w-full rounded-full bg-stone-200/70" />
+        <div className="h-3 w-5/6 rounded-full bg-stone-200/70" />
+        <div className="h-3 w-2/3 rounded-full bg-stone-200/70" />
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -53,6 +75,9 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [aeoResult, setAeoResult] = useState<any | null>(null);
   const [privacyResult, setPrivacyResult] = useState<any | null>(null);
+  const [crawlInternalPages, setCrawlInternalPages] = useState(false);
+  const [maxExtraUrls, setMaxExtraUrls] = useState(3);
+  const analysisRunRef = useRef(0);
   const { language, t } = useLanguage();
 
   const handleAnalyze = async (e: React.FormEvent) => {
@@ -74,56 +99,64 @@ export default function Home() {
     setPrivacyResult(null);
     setActiveResultIndex(0);
 
+    const runId = analysisRunRef.current + 1;
+    analysisRunRef.current = runId;
+
     try {
       const formattedUrl = url.startsWith('http') ? url : `https://${url}`;
+      const aeoFallback = { error: "fetch_failed", aeo: 0, structureScore: 0, contentScore: 0, authorityScore: 0, signals: emptyAeoSignals };
+      const privacyFallback = { error: "fetch_failed", privacyScore: 50, grade: "C", trackers: [], thirdPartyDomains: 0, consentDetected: false, adCount: 0, analyticsCount: 0, functionalCount: 0 };
 
-      const [analyzeSettled, aeoSettled, privacySettled] = await Promise.allSettled([
-        fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: formattedUrl, lang: language }),
-        }),
-        fetch("/api/aeo", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: formattedUrl }),
-        }),
-        fetch("/api/privacy", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: formattedUrl }),
-        }),
-      ]);
+      const aeoPromise = fetch("/api/aeo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: formattedUrl }),
+      })
+        .then(async (response) => {
+          const data = await response.json();
+          return response.ok ? data : { ...aeoFallback, error: data.error || "fetch_failed" };
+        })
+        .catch(() => aeoFallback);
 
-      if (analyzeSettled.status === "rejected") {
-        setError(t("connectionError"));
-        return;
-      }
-      const data = await analyzeSettled.value.json();
-      if (analyzeSettled.value.ok) {
+      const privacyPromise = fetch("/api/privacy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: formattedUrl }),
+      })
+        .then(async (response) => response.ok ? response.json() : privacyFallback)
+        .catch(() => privacyFallback);
+
+      const analyzeResponse = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: formattedUrl,
+            lang: language,
+            fast: !crawlInternalPages,
+            maxPages: crawlInternalPages ? maxExtraUrls + 1 : 1,
+          }),
+      });
+
+      if (runId !== analysisRunRef.current) return;
+
+      const data = await analyzeResponse.json();
+      if (analyzeResponse.ok) {
         setResults(data.results);
+        setLoading(false);
       } else {
         setError(data.error || t("analysisError"));
+        setLoading(false);
         return;
       }
 
-      if (aeoSettled.status === "fulfilled") {
-        const aeoData = await aeoSettled.value.json();
-        setAeoResult(aeoSettled.value.ok
-          ? aeoData
-          : { error: aeoData.error || "fetch_failed", aeo: 0, structureScore: 0, contentScore: 0, authorityScore: 0, signals: emptyAeoSignals });
-      } else {
-        setAeoResult({ error: "fetch_failed", aeo: 0, structureScore: 0, contentScore: 0, authorityScore: 0, signals: emptyAeoSignals });
-      }
+      void Promise.allSettled([aeoPromise, privacyPromise]).then(([aeoSettled, privacySettled]) => {
+        if (runId !== analysisRunRef.current) return;
 
-      if (privacySettled.status === "fulfilled") {
-        setPrivacyResult(await privacySettled.value.json());
-      } else {
-        setPrivacyResult({ error: "fetch_failed", privacyScore: 50, grade: "C", trackers: [], thirdPartyDomains: 0, consentDetected: false, adCount: 0, analyticsCount: 0, functionalCount: 0 });
-      }
+        setAeoResult(aeoSettled.status === "fulfilled" ? aeoSettled.value : aeoFallback);
+        setPrivacyResult(privacySettled.status === "fulfilled" ? privacySettled.value : privacyFallback);
+      });
     } catch (err) {
-      setError(t('connectionError'));
-    } finally {
+      if (runId === analysisRunRef.current) setError(t('connectionError'));
       setLoading(false);
     }
   };
@@ -886,6 +919,40 @@ export default function Home() {
               </div>
             </div>
 
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-xs text-stone-500">
+              <label className="flex min-w-0 cursor-pointer items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  checked={crawlInternalPages}
+                  onChange={(event) => setCrawlInternalPages(event.target.checked)}
+                  disabled={loading}
+                  className="h-3.5 w-3.5 accent-stone-900 disabled:opacity-50"
+                />
+                <span className="flex min-w-0 items-center gap-1.5 font-semibold">
+                  <Network size={12} className="shrink-0" />
+                  {language === "it" ? "Crawl pagine interne" : "Crawl internal pages"}
+                </span>
+              </label>
+
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium">
+                  {language === "it" ? "URL extra" : "Extra URLs"}
+                </span>
+                <select
+                  value={maxExtraUrls}
+                  onChange={(event) => setMaxExtraUrls(Number(event.target.value))}
+                  disabled={!crawlInternalPages || loading}
+                  className="h-7 rounded-md border border-stone-900/10 bg-white/50 px-2 text-xs font-bold text-stone-700 outline-none transition disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {[1, 2, 3].map((count) => (
+                    <option key={count} value={count}>
+                      {count}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <AnimatePresence>
               {loading && (
                 <motion.div
@@ -1109,6 +1176,7 @@ export default function Home() {
                   llmsTxtScore={aeoResult.signals?.llmsTxt ?? 0}
                 />
               )}
+              {!aeoResult && <LLMsTxtSkeleton />}
 
               {/* Carbon Footprint */}
               <CarbonScore resourceSummary={currentResult.resourceSummary} />

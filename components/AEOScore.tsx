@@ -57,6 +57,44 @@ function SignalBar({ label, value, tip }: { label: string; value: number; tip: s
     );
 }
 
+function AEOScoreSkeleton() {
+    return (
+        <div className="relative">
+            <div className="absolute -inset-1 rounded-2xl bg-stone-900/5 opacity-30 blur-xl" />
+            <div className="relative premium-surface rounded-2xl p-5 md:p-6 animate-pulse" aria-label="Loading AEO score">
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                    <div className="flex flex-col items-center gap-2 shrink-0">
+                        <div className="h-[100px] w-[100px] rounded-full bg-stone-200/80" />
+                        <div className="h-3 w-24 rounded-full bg-stone-200/80" />
+                    </div>
+
+                    <div className="flex-1 w-full space-y-4">
+                        {[0, 1, 2, 3].map((item) => (
+                            <div key={item} className="space-y-2">
+                                <div className="flex justify-between gap-4">
+                                    <div className="h-3 w-28 rounded-full bg-stone-200/80" />
+                                    <div className="h-3 w-14 rounded-full bg-stone-200/80" />
+                                </div>
+                                <div className="h-2 rounded-full bg-stone-200/80" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="mt-5 rounded-xl border border-stone-900/10 bg-stone-100/70 p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-stone-200/90" />
+                        <div className="flex-1 space-y-2">
+                            <div className="h-3 w-36 rounded-full bg-stone-200/90" />
+                            <div className="h-3 w-full rounded-full bg-stone-200/90" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function AEOScore({ result }: AEOScoreProps) {
     const { t } = useLanguage();
     const [expanded, setExpanded] = useState(false);
@@ -179,6 +217,8 @@ export default function AEOScore({ result }: AEOScoreProps) {
                 <p className="text-stone-600 text-sm leading-relaxed">{t("aeo_whatIs_body")}</p>
                 <p className="text-stone-500 text-xs leading-relaxed italic">{t("aeo_whatIs_note")}</p>
             </div>
+
+            {!result && <AEOScoreSkeleton />}
 
             {/* Fetch-error banner */}
             {result?.error === "fetch_failed" && (

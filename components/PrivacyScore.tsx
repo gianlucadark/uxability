@@ -39,11 +39,59 @@ function gradeColor(grade: string) {
   return { A: "#0f8f68", B: "#2f9f78", C: "#b7791f", D: "#a66b22", F: "#bd3150" }[grade] ?? "#756d64";
 }
 
+function PrivacyScoreSkeleton() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="card p-4 md:p-5 relative overflow-hidden"
+      aria-label="Loading privacy score"
+    >
+      <div className="animate-pulse">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="h-9 w-9 rounded-lg bg-stone-200/80" />
+          <div className="space-y-2">
+            <div className="h-5 w-36 rounded-full bg-stone-200/80" />
+            <div className="h-3 w-56 max-w-[58vw] rounded-full bg-stone-200/80" />
+          </div>
+          <div className="ml-auto h-5 w-12 rounded-full bg-stone-200/80" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-[180px_minmax(0,1fr)] gap-4 items-start">
+          <div className="flex w-full flex-col items-center p-3 md:p-4 rounded-xl premium-surface gap-3 self-start">
+            <div className="h-20 w-20 md:h-24 md:w-24 rounded-full bg-stone-200/80" />
+            <div className="h-7 w-28 rounded-full bg-stone-200/80" />
+            <div className="h-3 w-20 rounded-full bg-stone-200/80" />
+          </div>
+
+          <div className="flex min-w-0 flex-col gap-4">
+            <div className="flex flex-wrap gap-2">
+              {[0, 1, 2].map((item) => (
+                <div key={item} className="h-7 w-24 rounded-full bg-stone-200/80" />
+              ))}
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between gap-4">
+                <div className="h-3 w-28 rounded-full bg-stone-200/80" />
+                <div className="h-3 w-12 rounded-full bg-stone-200/80" />
+              </div>
+              <div className="h-2 rounded-full bg-stone-200/80" />
+            </div>
+            <div className="h-12 rounded-xl bg-stone-200/70" />
+            <div className="h-3 w-3/4 rounded-full bg-stone-200/80" />
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function PrivacyScore({ result }: PrivacyScoreProps) {
   const { t, language } = useLanguage();
   const [expanded, setExpanded] = useState(false);
 
-  if (!result) return null;
+  if (!result) return <PrivacyScoreSkeleton />;
 
   const { privacyScore, grade, trackers, thirdPartyDomains, consentDetected, adCount, analyticsCount, functionalCount } = result;
   const color = gradeColor(grade);

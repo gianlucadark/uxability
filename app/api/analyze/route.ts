@@ -57,10 +57,10 @@ async function recursiveCrawl(startUrl: string, targetCount: number) {
         }
 
         // Second pass: If not enough (less than 10 candidates), crawl the first few to find more
-        if (candidates.size < 10) {
+        if (candidates.size < targetCount) {
             const candidateArray = Array.from(candidates);
             for (const link of candidateArray) {
-                if (candidates.size >= 10) break;
+                if (candidates.size >= targetCount) break;
                 if (visitedForLinks.has(link)) continue;
 
                 visitedForLinks.add(link);
@@ -73,7 +73,7 @@ async function recursiveCrawl(startUrl: string, targetCount: number) {
                         if (subLink !== normalizedStart && !candidates.has(subLink)) {
                             candidates.add(subLink);
                         }
-                        if (candidates.size >= 10) break;
+                        if (candidates.size >= targetCount) break;
                     }
                 } catch (e) {
                     console.error(`Recursive crawl failed for ${link}`);
@@ -84,10 +84,16 @@ async function recursiveCrawl(startUrl: string, targetCount: number) {
         console.error("Discovery error:", error);
     }
 
-    return Array.from(candidates).slice(0, 10);
+    return Array.from(candidates).slice(0, targetCount);
 }
 
-async function analyzeUrl(url: string, apiKey?: string, lang: string = 'it') {
+async function analyzeUrl(
+    url: string,
+    apiKey?: string,
+    lang: string = 'it',
+    options: { metadataFallback?: boolean } = {},
+) {
+    const { metadataFallback = true } = options;
     const locale = lang === 'en' ? 'en-US' : 'it';
     const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(
         url
@@ -103,8 +109,6 @@ async function analyzeUrl(url: string, apiKey?: string, lang: string = 'it') {
     const lighthouse = data.lighthouseResult;
     const categoriesData = lighthouse.categories;
     const audits = lighthouse.audits;
-    console.log("RESULT", lighthouse);
-
     const screenshot = lighthouse.audits["final-screenshot"]?.details?.data;
     const thumbnails = lighthouse.audits["screenshot-thumbnails"]?.details?.items || [];
     const fieldData = data.loadingExperience || null;
@@ -127,20 +131,19 @@ async function analyzeUrl(url: string, apiKey?: string, lang: string = 'it') {
         tbt_v: audits["total-blocking-time"]?.numericValue,
     };
 
-    const seoMetadata = {
-        title: audits["document-title"]?.displayValue || "Nessun Titolo",
-        description: audits["meta-description"]?.displayValue || "Nessuna descrizione trovata per questo sito.",
-        ogImage: audits["og-image"]?.displayValue || null,
-        favicon: audits["favicon"]?.displayValue || null
+    // PageSpeed's audit displayValue is a label, not the real title/description.
+    // Start empty and let the HTML scrape below populate properly.
+    const seoMetadata: {
+        title: string;
+        description: string;
+        ogImage: string | null;
+        favicon: string | null;
+    } = {
+        title: "",
+        description: "",
+        ogImage: audits["og-image"]?.details?.data || null,
+        favicon: audits["favicon"]?.details?.data || null,
     };
-
-    // Try to extract more SEO data if available in audits or by a quick fetch if needed
-    // But PageSpeed usually has some of this in its audits if enabled. 
-    // Let's check some common audit IDs for images.
-    const ogImageAudit = audits["og-image"];
-    if (ogImageAudit && ogImageAudit.details && ogImageAudit.details.data) {
-        seoMetadata.ogImage = ogImageAudit.details.data;
-    }
 
     const seoScore = Math.round(categoriesData.seo.score * 100);
     const accessibilityScore = Math.round(categoriesData.accessibility.score * 100);
@@ -225,34 +228,144 @@ async function analyzeUrl(url: string, apiKey?: string, lang: string = 'it') {
             level: audit.score < 0.5 ? "High" : audit.score < 0.9 ? "Medium" : "Low",
         }));
 
-    // Fallback: Fetch HTML to get meta tags that PageSpeed might miss
-    try {
-        const pageRes = await fetch(url);
-        const html = await pageRes.text();
-        const $ = cheerio.load(html);
+    // Always scrape the rendered HTML for meta tags — PageSpeed audits don't expose
+    // the actual <title>/description text reliably (and they're empty for SPA shells anyway).
+    // A single GET is cheap compared to the PageSpeed call we just made.
+    if (metadataFallback) {
+        try {
+            const pageRes = await fetch(url, {
+                headers: {
+                    // Some sites return a generic shell without metadata to non-browser UAs.
+                    "User-Agent": "Mozilla/5.0 (compatible; SiteAnalyzer/1.0; +https://example.com/bot)",
+                    "Accept": "text/html,application/xhtml+xml",
+                    "Accept-Language": lang === "en" ? "en-US,en;q=0.9" : "it-IT,it;q=0.9,en;q=0.5",
+                },
+                redirect: "follow",
+            });
+            const html = await pageRes.text();
+            const $ = cheerio.load(html);
 
-        if (!seoMetadata.ogImage) {
-            seoMetadata.ogImage = $('meta[property="og:image"]').attr('content') ||
-                $('meta[name="twitter:image"]').attr('content') || null;
-        }
+            const pick = (...candidates: (string | undefined | null)[]) => {
+                for (const c of candidates) {
+                    const v = (c || "").trim().replace(/\s+/g, " ");
+                    if (v) return v;
+                }
+                return "";
+            };
 
-        if (!seoMetadata.favicon) {
-            seoMetadata.favicon = $('link[rel="icon"]').attr('href') ||
-                $('link[rel="shortcut icon"]').attr('href') ||
-                new URL('/favicon.ico', url).toString();
-        }
+            // Walk JSON-LD blocks looking for a "description" field on any node
+            // (Organization, WebSite, Article, Product, etc.).
+            const jsonLdDescription = (() => {
+                const visit = (node: any): string | null => {
+                    if (!node) return null;
+                    if (Array.isArray(node)) {
+                        for (const n of node) {
+                            const v = visit(n);
+                            if (v) return v;
+                        }
+                        return null;
+                    }
+                    if (typeof node === "object") {
+                        if (typeof node.description === "string" && node.description.trim()) {
+                            return node.description.trim();
+                        }
+                        if (Array.isArray(node["@graph"])) return visit(node["@graph"]);
+                    }
+                    return null;
+                };
+                const blocks = $('script[type="application/ld+json"]').toArray();
+                for (const el of blocks) {
+                    try {
+                        const found = visit(JSON.parse($(el).text()));
+                        if (found) return found;
+                    } catch { /* malformed JSON-LD — skip */ }
+                }
+                return null;
+            })();
 
-        // If title/desc are still missing or very short, try to get them from HTML
-        if (seoMetadata.title === "Nessun Titolo") {
-            seoMetadata.title = $('title').text() || $('meta[property="og:title"]').attr('content') || "Nessun Titolo";
+            // Trim a free-text snippet to a clean sentence boundary, ~max chars.
+            const sentenceTrim = (text: string, max = 200): string => {
+                const clean = text.trim().replace(/\s+/g, " ");
+                if (clean.length <= max) return clean;
+                const slice = clean.slice(0, max);
+                const lastStop = Math.max(
+                    slice.lastIndexOf(". "),
+                    slice.lastIndexOf("! "),
+                    slice.lastIndexOf("? "),
+                );
+                if (lastStop > max * 0.5) return slice.slice(0, lastStop + 1);
+                const lastSpace = slice.lastIndexOf(" ");
+                return (lastSpace > 0 ? slice.slice(0, lastSpace) : slice) + "…";
+            };
+
+            seoMetadata.title = pick(
+                $('meta[property="og:title"]').attr("content"),
+                $('meta[name="twitter:title"]').attr("content"),
+                $('meta[itemprop="name"]').attr("content"),
+                $("title").first().text(),
+                $("h1").first().text(),
+            );
+
+            seoMetadata.description = pick(
+                $('meta[name="description"]').attr("content"),
+                $('meta[property="og:description"]').attr("content"),
+                $('meta[name="twitter:description"]').attr("content"),
+                $('meta[itemprop="description"]').attr("content"),
+                $('meta[name="dc.description"], meta[name="DC.description"]').attr("content"),
+                jsonLdDescription,
+                // First paragraph in main content that's substantial enough
+                (() => {
+                    const candidates = $("article p, main p, [role='main'] p, section p, p")
+                        .map((_, el) => $(el).text().trim().replace(/\s+/g, " "))
+                        .get()
+                        .filter(t => t.length > 60 && t.length < 600);
+                    return candidates[0] ? sentenceTrim(candidates[0]) : "";
+                })(),
+                // Last resort: H1 + first short paragraph stitched together
+                (() => {
+                    const h1 = $("h1").first().text().trim().replace(/\s+/g, " ");
+                    const lead = $("article p, main p, p")
+                        .map((_, el) => $(el).text().trim().replace(/\s+/g, " "))
+                        .get()
+                        .find(t => t.length > 20);
+                    if (h1 && lead) return sentenceTrim(`${h1} — ${lead}`);
+                    return "";
+                })(),
+                // Very last resort: clean text from main/article, truncated.
+                (() => {
+                    const body = $("main, article, [role='main']").first().text()
+                        || $("body").text();
+                    const clean = body.replace(/\s+/g, " ").trim();
+                    return clean.length > 60 ? sentenceTrim(clean) : "";
+                })(),
+            );
+
+            // Reject obviously-junk descriptions (single word, only digits, page title repeated).
+            if (
+                seoMetadata.description &&
+                (seoMetadata.description.length < 20 ||
+                    seoMetadata.description.toLowerCase() === seoMetadata.title.toLowerCase())
+            ) {
+                seoMetadata.description = "";
+            }
+
+            if (!seoMetadata.ogImage) {
+                seoMetadata.ogImage = pick(
+                    $('meta[property="og:image"]').attr("content"),
+                    $('meta[name="twitter:image"]').attr("content"),
+                ) || null;
+            }
+
+            if (!seoMetadata.favicon) {
+                seoMetadata.favicon = pick(
+                    $('link[rel="icon"]').attr("href"),
+                    $('link[rel="shortcut icon"]').attr("href"),
+                    $('link[rel="apple-touch-icon"]').attr("href"),
+                ) || new URL("/favicon.ico", url).toString();
+            }
+        } catch (e) {
+            console.error("Manual meta extraction failed", e);
         }
-        if (seoMetadata.description.includes("Nessuna descrizione")) {
-            seoMetadata.description = $('meta[name="description"]').attr('content') ||
-                $('meta[property="og:description"]').attr('content') ||
-                seoMetadata.description;
-        }
-    } catch (e) {
-        console.error("Manual meta extraction failed", e);
     }
 
     return {
@@ -273,31 +386,41 @@ async function analyzeUrl(url: string, apiKey?: string, lang: string = 'it') {
 
 export async function POST(req: Request) {
     try {
-        const { url, lang } = await req.json();
+        const { url, lang, fast = false, maxPages } = await req.json();
 
         if (!url) {
             return NextResponse.json({ error: "URL is required" }, { status: 400 });
         }
 
         const apiKey = process.env.PAGESPEED_API_KEY;
+        const requestedMaxPages = fast
+            ? 1
+            : Math.min(4, Math.max(1, Number.isFinite(Number(maxPages)) ? Number(maxPages) : 4));
+        // Always run the metadata fallback (single GET) — without it the llms.txt
+        // generator and social preview render empty placeholders for every page.
+        const analyzeOptions = { metadataFallback: true };
 
         // 1. Analyze main URL first
-        const mainResult = await analyzeUrl(url, apiKey, lang);
+        const mainResult = await analyzeUrl(url, apiKey, lang, analyzeOptions);
         const allResults = [mainResult];
         const analyzedUrls = new Set<string>([normalizeUrl(mainResult.url)]);
 
+        if (requestedMaxPages <= 1) {
+            return NextResponse.json({ results: allResults });
+        }
+
         // 2. Discover potential candidates recursively to ensure we hit 5
-        const potentialLinks = await recursiveCrawl(url, 5);
+        const potentialLinks = await recursiveCrawl(url, requestedMaxPages);
 
         // 3. Analyze sequentially until we reach 5 successful results
         for (const link of potentialLinks) {
-            if (allResults.length >= 5) break;
+            if (allResults.length >= requestedMaxPages) break;
 
             const normLink = normalizeUrl(link);
             if (analyzedUrls.has(normLink)) continue;
 
             try {
-                const result = await analyzeUrl(link, apiKey, lang);
+                const result = await analyzeUrl(link, apiKey, lang, analyzeOptions);
                 const normFinalUrl = normalizeUrl(result.url);
 
                 if (!analyzedUrls.has(normFinalUrl)) {

@@ -24,14 +24,35 @@ function truncateAtWord(text: string, max: number): string {
     return (cut > 0 ? text.slice(0, cut) : text.slice(0, max)) + "…";
 }
 
+// Old PageSpeed defaults and other "no value" markers we never want to render.
+const PLACEHOLDER_RX = /^(nessun titolo|nessuna descrizione|no title|n\/a|none|null|undefined)/i;
+
+function cleanField(value: string | undefined | null): string {
+    if (!value) return "";
+    const v = value.trim().replace(/\s+/g, " ");
+    if (!v || PLACEHOLDER_RX.test(v)) return "";
+    return v;
+}
+
+function hostnameLabel(url: string): string {
+    try {
+        const host = new URL(url).hostname.replace(/^www\./, "");
+        const root = host.split(".")[0] || host;
+        return root.charAt(0).toUpperCase() + root.slice(1);
+    } catch {
+        return "Site";
+    }
+}
+
 function pageLabel(res: PageResult, siteName: string): string {
     try {
         const segments = new URL(res.url).pathname.split("/").filter(Boolean);
         if (segments.length === 0) return "Home";
 
         // Prefer the page-specific part of the <title> (strip site name)
-        if (res.seoMetadata.title) {
-            const parts = res.seoMetadata.title.split(/\s*[-|·—\/]\s*/);
+        const title = cleanField(res.seoMetadata.title);
+        if (title) {
+            const parts = title.split(/\s*[-|·—\/]\s*/);
             const specific = parts.find(
                 p => p.trim().toLowerCase() !== siteName.toLowerCase() && p.trim().length > 1
             );
@@ -49,27 +70,22 @@ function pageLabel(res: PageResult, siteName: string): string {
 
 function formatLink(res: PageResult, siteName: string): string {
     const label = pageLabel(res, siteName);
-    const desc = res.seoMetadata.description
-        ? `: ${truncateAtWord(res.seoMetadata.description, 150)}`
-        : "";
-    return `- [${label}](${res.url})${desc}`;
+    const desc = cleanField(res.seoMetadata.description);
+    return desc
+        ? `- [${label}](${res.url}): ${truncateAtWord(desc, 150)}`
+        : `- [${label}](${res.url})`;
 }
 
 function buildFileContent(results: PageResult[]): string {
     if (!results || results.length === 0) return "";
 
     const main = results[0];
-    const hostname = (() => {
-        try {
-            return new URL(main.url).hostname.replace(/^www\./, "").split(".")[0];
-        } catch { return main.url; }
-    })();
+    const mainTitle = cleanField(main.seoMetadata.title);
+    const siteName = mainTitle
+        ? mainTitle.split(/\s*[-|·—\/]\s*/)[0].trim()
+        : hostnameLabel(main.url);
 
-    const siteName = main.seoMetadata.title
-        ? main.seoMetadata.title.split(/\s*[-|·—\/]\s*/)[0].trim()
-        : hostname;
-
-    const siteDesc = main.seoMetadata.description || "";
+    const siteDesc = cleanField(main.seoMetadata.description);
     const lines: string[] = [`# ${siteName}`];
     if (siteDesc) lines.push("", `> ${siteDesc}`);
 
@@ -95,8 +111,9 @@ function buildFileContent(results: PageResult[]): string {
         const isHomepage = i === 0 && (() => {
             try { return new URL(res.url).pathname === "/"; } catch { return false; }
         })();
+        const pageDesc = cleanField(res.seoMetadata.description);
         const descSameAsSiteDesc = isHomepage && siteDesc &&
-            res.seoMetadata.description?.slice(0, 60) === siteDesc.slice(0, 60);
+            pageDesc.slice(0, 60) === siteDesc.slice(0, 60);
         if (descSameAsSiteDesc) {
             lines.push(`- [Home](${res.url})`);
         } else {
