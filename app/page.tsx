@@ -19,6 +19,7 @@ import FixPlan from "@/components/FixPlan";
 import FrustrationIndex from "@/components/FrustrationIndex";
 import SocialPreview from "@/components/SocialPreview";
 import AEOScore from "@/components/AEOScore";
+import ShareScoreCard from "@/components/ShareScoreCard";
 import LLMsTxtGenerator from "@/components/LLMsTxtGenerator";
 import CarbonScore from "@/components/CarbonScore";
 import PrivacyScore from "@/components/PrivacyScore";
@@ -1085,6 +1086,12 @@ export default function Home() {
                   onClick={() => setSelectedCategory("seo")}
                 />
               </div>
+
+              <ShareScoreCard
+                scores={currentResult.scores}
+                aeoScore={aeoResult?.aeo ?? 0}
+                analyzedUrl={currentResult.url}
+              />
 
               {/* 0. Strategic AI Advice */}
               <AIRecommendation
