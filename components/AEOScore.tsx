@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Sparkles, AlertTriangle, ChevronDown } from "lucide-react";
+import { Bot, Sparkles, AlertTriangle, ChevronDown, BrainCircuit } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 export interface AEOSignals {
@@ -26,7 +26,9 @@ export interface AEOResult {
     structureScore: number;
     contentScore: number;
     authorityScore: number;
+    aiScore?: number;
     signals: AEOSignals;
+    aiEnhanced?: boolean;
     error?: string;
 }
 
@@ -67,6 +69,18 @@ export default function AEOScore({ result }: AEOScoreProps) {
 
     const score = result?.aeo ?? 0;
     const color = getColor(score);
+    const aiScore = result?.aiEnhanced ? (result.aiScore ?? score) : 0;
+    const aiTone = result?.aiEnhanced
+        ? {
+            panel: "bg-emerald-500/8 border-emerald-500/20",
+            icon: "bg-emerald-600/10 text-emerald-700",
+            text: "text-emerald-800",
+        }
+        : {
+            panel: "bg-amber-500/8 border-amber-500/25",
+            icon: "bg-amber-600/10 text-amber-700",
+            text: "text-amber-800",
+        };
 
     const pillars = result ? [
         {
@@ -104,6 +118,53 @@ export default function AEOScore({ result }: AEOScoreProps) {
             ],
         },
     ] : [];
+    const renderAIRolePanel = (compact = false) => result ? (
+        <div
+            className={`rounded-xl border p-4 ${aiTone.panel}`}
+        >
+            <div className="flex items-start gap-3">
+                <div className={`mt-0.5 rounded-lg p-2 ${aiTone.icon}`}>
+                    <BrainCircuit size={compact ? 16 : 18} />
+                </div>
+                <div className="min-w-0 space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
+                        <h4 className={`text-sm font-black ${compact ? aiTone.text : "text-stone-800"}`}>
+                            {compact ? t("aeo_ai_role_title") : t("aeo_ai_role_heading")}
+                        </h4>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-stone-500">
+                            {result.aiEnhanced ? t("aeo_ai_role_active_label") : t("aeo_ai_role_fallback_label")}
+                        </span>
+                    </div>
+                    <p className={`${compact ? "text-[11px]" : "text-xs"} leading-relaxed text-stone-600`}>
+                        {compact
+                            ? (result.aiEnhanced ? t("aeo_ai_role_active_desc") : t("aeo_ai_role_fallback_desc"))
+                            : t("aeo_ai_role_body")}
+                    </p>
+                    {!compact && (
+                        <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                                <div className="rounded-lg bg-white/55 border border-stone-200/80 p-3">
+                                    <div className="text-lg font-black text-stone-900">65%</div>
+                                    <p className="mt-1 text-[11px] leading-relaxed text-stone-500">
+                                        {t("aeo_ai_role_high_weight")}
+                                    </p>
+                                </div>
+                                <div className="rounded-lg bg-white/55 border border-stone-200/80 p-3">
+                                    <div className="text-lg font-black text-stone-900">25%</div>
+                                    <p className="mt-1 text-[11px] leading-relaxed text-stone-500">
+                                        {t("aeo_ai_role_low_weight")}
+                                    </p>
+                                </div>
+                            </div>
+                            <p className="text-[11px] leading-relaxed text-stone-500 italic">
+                                {result.aiEnhanced ? t("aeo_ai_role_active_desc") : t("aeo_ai_role_fallback_desc")}
+                            </p>
+                        </>
+                    )}
+                </div>
+            </div>
+        </div>
+    ) : null;
 
     return (
         <div className="space-y-4">
@@ -188,17 +249,24 @@ export default function AEOScore({ result }: AEOScoreProps) {
                             {/* Pillar bars */}
                             <div className="flex-1 w-full space-y-3">
                                 {[
-                                    { label: t("aeo_pillar_structure"), value: result.structureScore, weight: "35%" },
-                                    { label: t("aeo_pillar_content"),   value: result.contentScore,   weight: "40%" },
-                                    { label: t("aeo_pillar_authority"), value: result.authorityScore, weight: "25%" },
+                                    {
+                                        label: t("aeo_ai_score_label"),
+                                        value: aiScore,
+                                        weight: result.aiEnhanced ? "35%" : t("aeo_ai_role_fallback_label"),
+                                        color: result.aiEnhanced ? "#0f8f68" : "#b7791f",
+                                        delay: 0.2,
+                                    },
+                                    { label: t("aeo_pillar_structure"), value: result.structureScore, weight: result.aiEnhanced ? "25%" : "35%" },
+                                    { label: t("aeo_pillar_content"),   value: result.contentScore,   weight: result.aiEnhanced ? "25%" : "40%" },
+                                    { label: t("aeo_pillar_authority"), value: result.authorityScore, weight: result.aiEnhanced ? "15%" : "25%" },
                                 ].map((p, i) => {
-                                    const c = p.value >= 70 ? "#0f8f68" : p.value >= 40 ? "#b7791f" : "#bd3150";
+                                    const c = p.color || (p.value >= 70 ? "#0f8f68" : p.value >= 40 ? "#b7791f" : "#bd3150");
                                     return (
                                         <div key={i} className="space-y-1">
                                             <div className="flex justify-between text-xs text-stone-500">
                                                 <span>{p.label}</span>
                                                 <div className="flex items-center gap-2">
-                                        <span className="text-stone-500">{p.weight}</span>
+                                                    <span className="text-stone-500">{p.weight}</span>
                                                     <span className="font-mono font-bold" style={{ color: c }}>{p.value}</span>
                                                 </div>
                                             </div>
@@ -208,13 +276,35 @@ export default function AEOScore({ result }: AEOScoreProps) {
                                                     style={{ backgroundColor: c }}
                                                     initial={{ width: 0 }}
                                                     animate={{ width: `${p.value}%` }}
-                                                    transition={{ duration: 0.9, ease: "easeOut", delay: 0.3 + i * 0.1 }}
+                                                    transition={{ duration: 0.9, ease: "easeOut", delay: (p.delay ?? 0.3) + i * 0.1 }}
                                                 />
                                             </div>
                                         </div>
                                     );
                                 })}
                             </div>
+                        </div>
+
+                        <div
+                            className={`mt-5 flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border p-4 ${
+                                result.aiEnhanced
+                                    ? "bg-emerald-500/8 border-emerald-500/20 text-emerald-800"
+                                    : "bg-amber-500/8 border-amber-500/25 text-amber-800"
+                            }`}
+                        >
+                            <div className="flex items-center gap-2 shrink-0">
+                                {result.aiEnhanced ? (
+                                    <BrainCircuit size={16} />
+                                ) : (
+                                    <AlertTriangle size={16} />
+                                )}
+                                <span className="text-xs font-black uppercase tracking-widest">
+                                    {result.aiEnhanced ? t("aeo_ai_active") : t("aeo_ai_fallback")}
+                                </span>
+                            </div>
+                            <p className="text-xs leading-relaxed sm:border-l sm:pl-3 border-current/20">
+                                {result.aiEnhanced ? t("aeo_ai_active_desc") : t("aeo_ai_fallback_desc")}
+                            </p>
                         </div>
 
                         {/* Expand toggle */}
@@ -240,12 +330,29 @@ export default function AEOScore({ result }: AEOScoreProps) {
                                     className="overflow-hidden"
                                 >
                                     <div className="pt-6 space-y-6 border-t border-stone-200 mt-5">
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0 }}
+                                            className="space-y-3"
+                                        >
+                                            <div className="flex items-center justify-between gap-3">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-stone-400">
+                                                    {t("aeo_ai_role_title")}
+                                                </span>
+                                                <span className="text-[10px] font-mono text-stone-300">
+                                                    {result.aiEnhanced ? t("aeo_ai_role_active_label") : t("aeo_ai_role_fallback_label")}
+                                                </span>
+                                            </div>
+                                            {renderAIRolePanel(false)}
+                                        </motion.div>
+
                                         {pillars.map((pillar, pi) => (
                                             <motion.div
                                                 key={pillar.key}
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: pi * 0.08 }}
+                                                transition={{ delay: 0.08 + pi * 0.08 }}
                                                 className="space-y-2"
                                             >
                                                 <div className="flex items-center justify-between">
