@@ -319,7 +319,7 @@ export const translations = {
         llmsTxtCopied: "Copiato!",
         llmsTxtDeployHint: "Carica questo file nella root pubblica del tuo sito (es. /public/llms.txt o la cartella static). Non serve configurazione aggiuntiva: basta che sia raggiungibile all'URL dominio.com/llms.txt.",
     },
-    en: { 
+    en: {
         // Navbar
         portfolio: "Portfolio",
 
