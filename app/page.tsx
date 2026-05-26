@@ -47,6 +47,7 @@ const emptyAeoSignals = {
 
 const ANALYSIS_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const ANALYSIS_CACHE_PREFIX = "uxability:analysis:v3:";
+const LAST_UPDATED = "2026-05-26";
 
 interface CachedValue<T> {
   timestamp: number;
@@ -1384,9 +1385,35 @@ export default function Home() {
         aria-label={language === "it" ? "Domande frequenti" : "Frequently asked questions"}
       >
         <div className="border-t border-stone-100 pt-10 space-y-1">
-          <h2 className="text-[11px] font-semibold uppercase tracking-widest text-stone-700 mb-6 select-none">
-            {language === "it" ? "Cosa analizza UXAbility" : "What UXAbility analyzes"}
-          </h2>
+          <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-[11px] font-semibold uppercase tracking-widest text-stone-700 select-none">
+              {language === "it" ? "Cosa analizza UXAbility" : "What UXAbility analyzes"}
+            </h2>
+            <p className="text-[11px] font-medium text-stone-500">
+              {language === "it" ? "Aggiornato il " : "Updated on "}
+              <time dateTime={LAST_UPDATED}>
+                {language === "it" ? "26 maggio 2026" : "May 26, 2026"}
+              </time>
+            </p>
+          </div>
+
+          <div className="mb-8 grid grid-cols-1 gap-4 text-xs leading-relaxed text-stone-600 md:grid-cols-3">
+            <p>
+              {language === "it"
+                ? "UXAbility e uno strumento di audit web che analizza qualsiasi URL da piu punti di vista: prestazioni, accessibilita, SEO tecnica, leggibilita per motori AI, privacy, impatto carbonico e policy dei crawler. Il report trasforma metriche tecniche in priorita operative, cosi ogni intervento e collegato a un impatto concreto."
+                : "UXAbility is a web audit tool that analyzes any URL across performance, accessibility, technical SEO, AI readability, privacy, carbon impact, and crawler policy. The report turns technical metrics into operational priorities, so each suggested fix is tied to a concrete impact."}
+            </p>
+            <p>
+              {language === "it"
+                ? "L'AEO Score misura quanto una pagina e facile da comprendere, estrarre e citare per sistemi come ChatGPT, Perplexity e Google AI. La valutazione combina struttura HTML, dati Schema.org, FAQ, paragrafi citabili, definizioni, autorevolezza editoriale, link esterni e file llms.txt."
+                : "The AEO Score measures how easy a page is to understand, extract, and cite for systems such as ChatGPT, Perplexity, and Google AI. The evaluation combines HTML structure, Schema.org data, FAQ content, citable paragraphs, definitions, editorial authority, outbound links, and llms.txt."}
+            </p>
+            <p>
+              {language === "it"
+                ? "La privacy score rileva tracker, script di terze parti e segnali di consenso, mentre la bot policy controlla se i crawler AI possono leggere il sito. Questi controlli aiutano a evitare un controsenso frequente: pagine veloci e ben indicizzate, ma poco chiare per utenti, motori di ricerca o sistemi di risposta AI."
+                : "The privacy score detects trackers, third-party scripts, and consent signals, while the bot policy checks whether AI crawlers can read the site. These checks help avoid a common contradiction: pages that are fast and indexable, but unclear for users, search engines, or AI answer systems."}
+            </p>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 mb-8">
             {[

@@ -81,7 +81,7 @@ const structuredData = {
   operatingSystem: "Web",
   description: "Audit tool per performance, accessibilita, SEO, AEO, privacy e policy dei bot AI.",
   datePublished: "2024-01-01",
-  dateModified: new Date().toISOString().split("T")[0],
+  dateModified: "2026-05-26",
   creator: {
     "@type": "Person",
     name: "Gianluca D'Arcangelo",
