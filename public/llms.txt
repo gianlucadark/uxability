@@ -1,0 +1,20 @@
+# UXAbility
+
+> UXAbility is a web audit application for performance, accessibility, SEO, Answer Engine Optimization, privacy, carbon footprint, and AI bot policy checks.
+
+## Primary Pages
+
+- Home and audit tool: https://uxability.vercel.app/
+
+## Capabilities
+
+- Core Web Vitals and Lighthouse-style diagnostics
+- Accessibility, SEO, and best-practice scoring
+- AEO and AI readability signals
+- Privacy and third-party tracker analysis
+- robots.txt and AI crawler policy analysis
+- PDF report export
+
+## Crawling Guidance
+
+AI answer engines may crawl and cite the public UXAbility homepage. API endpoints under `/api/` are not intended as citation sources.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useMotionValue, useScroll, useSpring } from "framer-motion";
 import Lenis from "lenis";
 
@@ -12,10 +12,14 @@ export default function CreativeBackdrop() {
   const [active, setActive] = useState(false);
   const [interactive, setInteractive] = useState(false);
   const [pressed, setPressed] = useState(false);
+  const activeRef = useRef(false);
+  const interactiveRef = useRef(false);
+  const pressedRef = useRef(false);
 
   useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (reduceMotion.matches) return;
+    const finePointer = window.matchMedia("(pointer: fine)");
+    if (reduceMotion.matches || !finePointer.matches) return;
 
     const lenis = new Lenis({
       duration: 1.05,
@@ -51,20 +55,39 @@ export default function CreativeBackdrop() {
 
       rawX.set(event.clientX);
       rawY.set(event.clientY);
-      setActive(true);
-      setInteractive(isInteractive);
+      if (!activeRef.current) {
+        activeRef.current = true;
+        setActive(true);
+      }
+      if (interactiveRef.current !== isInteractive) {
+        interactiveRef.current = isInteractive;
+        setInteractive(isInteractive);
+      }
       document.documentElement.style.setProperty("--cursor-x", `${event.clientX}px`);
       document.documentElement.style.setProperty("--cursor-y", `${event.clientY}px`);
     };
 
     const onPointerLeave = () => {
+      activeRef.current = false;
+      interactiveRef.current = false;
+      pressedRef.current = false;
       setActive(false);
       setInteractive(false);
       setPressed(false);
     };
 
-    const onPointerDown = () => setPressed(true);
-    const onPointerUp = () => setPressed(false);
+    const onPointerDown = () => {
+      if (!pressedRef.current) {
+        pressedRef.current = true;
+        setPressed(true);
+      }
+    };
+    const onPointerUp = () => {
+      if (pressedRef.current) {
+        pressedRef.current = false;
+        setPressed(false);
+      }
+    };
 
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerleave", onPointerLeave);

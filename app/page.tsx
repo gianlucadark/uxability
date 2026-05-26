@@ -9,7 +9,6 @@ import CreativeBackdrop from "@/components/CreativeBackdrop";
 import ScoreCircle from "@/components/ScoreCircle";
 import OpportunityCard from "@/components/OpportunityCard";
 import AuditModal from "@/components/AuditModal";
-import VisualInsights from "@/components/VisualInsights";
 import FieldDataBadges from "@/components/FieldDataBadges";
 import ResourceBreakdown from "@/components/ResourceBreakdown";
 import MainThreadBreakdown from "@/components/MainThreadBreakdown";
@@ -23,9 +22,8 @@ import ShareScoreCard from "@/components/ShareScoreCard";
 import LLMsTxtGenerator from "@/components/LLMsTxtGenerator";
 import CarbonScore from "@/components/CarbonScore";
 import PrivacyScore from "@/components/PrivacyScore";
+import AIBotPolicy, { type BotPolicyResult } from "@/components/AIBotPolicy";
 import ParticleWord from "@/components/ParticleWord";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { useLanguage } from "@/context/LanguageContext";
 
 const emptyAeoSignals = {
@@ -128,6 +126,7 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [aeoResult, setAeoResult] = useState<any | null>(null);
   const [privacyResult, setPrivacyResult] = useState<any | null>(null);
+  const [botPolicyResult, setBotPolicyResult] = useState<BotPolicyResult | null>(null);
   const [crawlInternalPages, setCrawlInternalPages] = useState(false);
   const [maxExtraUrls, setMaxExtraUrls] = useState(3);
   const analysisRunRef = useRef(0);
@@ -150,6 +149,7 @@ export default function Home() {
     setResults(null);
     setAeoResult(null);
     setPrivacyResult(null);
+    setBotPolicyResult(null);
     setActiveResultIndex(0);
 
     const runId = analysisRunRef.current + 1;
@@ -159,15 +159,29 @@ export default function Home() {
       const formattedUrl = normalizeAnalysisUrl(url);
       const aeoCacheKey = `aeo:${formattedUrl}`;
       const privacyCacheKey = `privacy:${formattedUrl}`;
+      const botsCacheKey = `bots:${formattedUrl}`;
       const analyzeCacheKey = `analyze:${formattedUrl}:${language}:${crawlInternalPages ? maxExtraUrls + 1 : 1}`;
       const aeoFallback = { error: "fetch_failed", aeo: 0, structureScore: 0, contentScore: 0, authorityScore: 0, signals: emptyAeoSignals };
       const privacyFallback = { error: "fetch_failed", privacyScore: 50, grade: "C", trackers: [], thirdPartyDomains: 0, consentDetected: false, adCount: 0, analyticsCount: 0, functionalCount: 0 };
+      const botsFallback: BotPolicyResult = {
+        fetched: false,
+        robotsUrl: "",
+        hasRobotsTxt: false,
+        wildcardStatus: "not_specified",
+        wildcardDisallowedPaths: [],
+        bots: [],
+        summary: { allow: 0, block: 0, partial: 0, not_specified: 0 },
+        suggestedFix: null,
+        error: "fetch_failed",
+      };
       const cachedAeo = getCachedValue<typeof aeoFallback>(aeoCacheKey);
       const cachedPrivacy = getCachedValue<typeof privacyFallback>(privacyCacheKey);
+      const cachedBots = getCachedValue<BotPolicyResult>(botsCacheKey);
       const cachedAnalyze = getCachedValue<{ results: NonNullable<typeof results> }>(analyzeCacheKey);
 
       if (cachedAeo) setAeoResult(cachedAeo);
       if (cachedPrivacy) setPrivacyResult(cachedPrivacy);
+      if (cachedBots) setBotPolicyResult(cachedBots);
 
       const aeoPromise = cachedAeo
         ? Promise.resolve(cachedAeo)
@@ -198,6 +212,20 @@ export default function Home() {
           })
           .catch(() => privacyFallback);
 
+      const botsPromise = cachedBots
+        ? Promise.resolve(cachedBots)
+        : fetch("/api/bots", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: formattedUrl }),
+        })
+          .then(async (response) => {
+            const result: BotPolicyResult = response.ok ? await response.json() : botsFallback;
+            if (shouldCacheResult(result)) setCachedValue(botsCacheKey, result);
+            return result;
+          })
+          .catch(() => botsFallback);
+
       const data = cachedAnalyze
         ? cachedAnalyze
         : await fetch("/api/analyze", {
@@ -221,11 +249,12 @@ export default function Home() {
       setResults(data.results);
       setLoading(false);
 
-      void Promise.allSettled([aeoPromise, privacyPromise]).then(([aeoSettled, privacySettled]) => {
+      void Promise.allSettled([aeoPromise, privacyPromise, botsPromise]).then(([aeoSettled, privacySettled, botsSettled]) => {
         if (runId !== analysisRunRef.current) return;
 
         setAeoResult(aeoSettled.status === "fulfilled" ? aeoSettled.value : aeoFallback);
         setPrivacyResult(privacySettled.status === "fulfilled" ? privacySettled.value : privacyFallback);
+        setBotPolicyResult(botsSettled.status === "fulfilled" ? botsSettled.value : botsFallback);
       });
     } catch (err) {
       if (runId === analysisRunRef.current) {
@@ -237,8 +266,13 @@ export default function Home() {
 
   const currentResult = results ? results[activeResultIndex] : null;
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
     if (!results) return;
+
+    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+      import("jspdf"),
+      import("jspdf-autotable"),
+    ]);
 
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const timestamp = new Date().toLocaleString();
@@ -871,7 +905,7 @@ export default function Home() {
     "PERFORMANCE", "ACCESSIBILITY", "SEO", "CORE WEB VITALS",
     "AI ANALYSIS", "UX AUDIT", "AEO SCORE", "BEST PRACTICES",
     "FRUSTRATION INDEX", "LIGHTHOUSE", "RESOURCE BREAKDOWN",
-    "CARBON FOOTPRINT", "PRIVACY SCORE",
+    "CARBON FOOTPRINT", "PRIVACY SCORE", "AI BOT POLICY",
   ];
 
   return (
@@ -879,7 +913,7 @@ export default function Home() {
       <CreativeBackdrop />
       <Navbar />
 
-      <main className="w-full max-w-5xl px-4 md:px-6 pt-32 md:pt-40 pb-20 flex-grow relative z-10">
+      <main id="main-content" className="w-full max-w-5xl px-4 md:px-6 pt-32 md:pt-40 pb-20 flex-grow relative z-10">
         {/* Hero Section */}
         <section className="text-center mb-0 relative">
           {/* Background decoration */}
@@ -949,7 +983,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-base md:text-lg text-muted-premium font-medium max-w-2xl mx-auto mb-10"
+            className="text-base md:text-lg text-stone-600 font-medium max-w-2xl mx-auto mb-10"
           >
             {t('heroSubtitle')}
           </motion.p>
@@ -962,15 +996,19 @@ export default function Home() {
             className="relative max-w-2xl mx-auto"
           >
             <div className="mb-2 flex items-center justify-between px-2">
-              <span className="section-label text-stone-400">Enter URL</span>
-              <span className="hidden sm:inline section-label text-stone-300">Audit Command</span>
+              <span className="section-label text-stone-600">Enter URL</span>
+              <span className="hidden sm:inline section-label text-stone-600">Audit Command</span>
             </div>
             <div className="relative group w-full flex items-center">
               <input
+                id="audit-url"
                 type="text"
+                inputMode="url"
+                autoComplete="url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder={t('inputPlaceholder')}
+                aria-label={language === "it" ? "URL del sito da analizzare" : "Website URL to analyze"}
                 className="w-full h-14 md:h-16 pl-12 md:pl-14 pr-[120px] md:pr-40 input-premium text-base md:text-lg placeholder:opacity-40"
               />
               <Search className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-stone-500 opacity-60 group-focus-within:text-stone-900 transition-colors pointer-events-none" size={20} />
@@ -979,6 +1017,8 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={loading || !url}
+                  aria-label={loading ? t('crawlingText') : t('analyzeButton')}
+                  aria-busy={loading}
                   className="h-full px-4 md:px-6 btn-primary flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {loading ? (
@@ -993,9 +1033,10 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-xs text-stone-500">
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-xs text-stone-700">
               <label className="flex min-w-0 cursor-pointer items-center gap-1.5">
                 <input
+                  id="crawl-internal-pages"
                   type="checkbox"
                   checked={crawlInternalPages}
                   onChange={(event) => setCrawlInternalPages(event.target.checked)}
@@ -1013,9 +1054,11 @@ export default function Home() {
                   {language === "it" ? "URL extra" : "Extra URLs"}
                 </span>
                 <select
+                  id="max-extra-urls"
                   value={maxExtraUrls}
                   onChange={(event) => setMaxExtraUrls(Number(event.target.value))}
                   disabled={!crawlInternalPages || loading}
+                  aria-label={language === "it" ? "Numero di URL extra da analizzare" : "Number of extra URLs to analyze"}
                   className="h-7 rounded-md border border-stone-900/10 bg-white/50 px-2 text-xs font-bold text-stone-700 outline-none transition disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {[1, 2, 3].map((count) => (
@@ -1029,12 +1072,14 @@ export default function Home() {
 
             <AnimatePresence>
               {loading && (
-                <motion.div
+              <motion.div
                   key="scan-status"
                   initial={{ opacity: 0, y: -4, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -4, scale: 0.98 }}
                   transition={{ duration: 0.25 }}
+                  role="status"
+                  aria-live="polite"
                   className="absolute left-0 right-0 top-[calc(100%+12px)] z-20 mx-auto max-w-xl rounded-xl border border-stone-900/15 bg-[rgba(255,252,246,0.92)] p-3 shadow-[0_18px_45px_rgba(32,28,24,0.14)] backdrop-blur-xl"
                 >
                   <div className="flex items-center gap-3">
@@ -1058,7 +1103,7 @@ export default function Home() {
                           <span />
                         </div>
                       </div>
-                      <p className="mt-1 text-xs font-medium text-stone-500">
+                      <p className="mt-1 text-xs font-medium text-stone-600">
                         {t('crawlingText')}
                       </p>
                       <div className="mt-3 grid grid-cols-3 gap-1.5">
@@ -1083,6 +1128,7 @@ export default function Home() {
               <motion.p
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
+                role="alert"
                 className="mt-4 text-[var(--danger)] font-medium"
               >
                 {error}
@@ -1122,7 +1168,7 @@ export default function Home() {
         </section>
 
         {/* Marquee strip */}
-        <div className="relative -mx-4 md:-mx-6 overflow-hidden border-y border-stone-200 py-3 my-16">
+        <div aria-hidden="true" className="relative -mx-4 md:-mx-6 overflow-hidden border-y border-stone-200 py-3 my-16">
           <div className="flex whitespace-nowrap animate-marquee">
             {[...marqueeItems, ...marqueeItems].map((item, i) => (
               <span key={i} className="section-label text-stone-300 mx-10">
@@ -1159,6 +1205,7 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={exportToPDF}
+                    type="button"
                     className="flex items-center gap-2 px-4 py-2 rounded-lg premium-surface hover:border-stone-400 transition-all text-sm font-medium text-stone-800"
                   >
                     <FileText size={18} className="text-stone-500" />
@@ -1176,11 +1223,13 @@ export default function Home() {
                 <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-12">
                   {results.map((res, i) => (
                     <button
+                      type="button"
                       key={`tab-${i}-${res.url}`}
                       onClick={() => setActiveResultIndex(i)}
+                      aria-current={activeResultIndex === i ? "page" : undefined}
                       className={`px-4 md:px-6 py-2 rounded-lg text-xs font-semibold transition-all border ${activeResultIndex === i
                         ? "bg-stone-900 text-white border-stone-900"
-                        : "bg-transparent text-stone-400 border-stone-200 hover:border-stone-400 hover:text-stone-700"
+                        : "bg-transparent text-stone-600 border-stone-200 hover:border-stone-400 hover:text-stone-900"
                         }`}
                     >
                       <span className="truncate max-w-[80px] md:max-w-[120px]">
@@ -1252,6 +1301,9 @@ export default function Home() {
               )}
               {!aeoResult && <LLMsTxtSkeleton />}
 
+              {/* AI Bot Policy (robots.txt) */}
+              <AIBotPolicy result={botPolicyResult} />
+
               {/* Carbon Footprint */}
               <CarbonScore resourceSummary={currentResult.resourceSummary} />
 
@@ -1313,7 +1365,7 @@ export default function Home() {
                       <OpportunityCard key={`opp-${i}-${opp.title.substring(0, 10)}`} opportunity={opp} index={i} />
                     ))
                   ) : (
-                    <div className="card p-12 text-center text-stone-400 italic">
+                    <div className="card p-12 text-center text-stone-600 italic">
                       {t('noCriticalities')}
                     </div>
                   )}
@@ -1323,6 +1375,103 @@ export default function Home() {
           )}
         </AnimatePresence>
       </main>
+
+      <section
+        className="w-full max-w-5xl mx-auto px-4 md:px-6 pb-4 relative z-10"
+        aria-label={language === "it" ? "Domande frequenti" : "Frequently asked questions"}
+      >
+        <div className="border-t border-stone-100 pt-10 space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-stone-700 mb-6 select-none">
+            {language === "it" ? "Cosa analizza UXAbility" : "What UXAbility analyzes"}
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 mb-8">
+            {[
+              {
+                title: language === "it" ? "Performance e Core Web Vitals" : "Performance & Core Web Vitals",
+                body: language === "it"
+                  ? "Lighthouse misura LCP, INP e CLS — le metriche che Google usa per il ranking. Un punteggio basso penalizza la visibilità organica."
+                  : "Lighthouse measures LCP, INP and CLS — the metrics Google uses for ranking. A low score directly hurts organic visibility.",
+              },
+              {
+                title: language === "it" ? "AEO — Answer Engine Optimization" : "AEO — Answer Engine Optimization",
+                body: language === "it"
+                  ? "L'AEO misura quanto una pagina è facile da citare per AI come ChatGPT, Perplexity e Google AI. Conta chiarezza semantica, definizioni e autorevolezza."
+                  : "AEO measures how easy a page is to cite for AI like ChatGPT, Perplexity and Google AI. Semantic clarity, definitions, and authority matter most.",
+              },
+              {
+                title: language === "it" ? "Privacy e tracker di terze parti" : "Privacy & third-party trackers",
+                body: language === "it"
+                  ? "Rileva script pubblicitari, analytics e pixel. Meno tracker significa meno rischi GDPR, più fiducia e caricamento più veloce."
+                  : "Detects advertising scripts, analytics, and tracking pixels. Fewer trackers means less GDPR risk, more user trust, and faster loading.",
+              },
+              {
+                title: language === "it" ? "Policy per i bot AI (robots.txt)" : "AI bot policy (robots.txt)",
+                body: language === "it"
+                  ? "Verifica se GPTBot, ClaudeBot e PerplexityBot possono indicizzare il sito. Un blocco implicito può escludere il sito dalle risposte AI."
+                  : "Checks whether GPTBot, ClaudeBot and PerplexityBot can index the site. An implicit block can silently exclude the site from AI-generated answers.",
+              },
+            ].map(({ title, body }) => (
+              <div key={title}>
+                <h3 className="text-xs font-semibold text-stone-700 mb-1">{title}</h3>
+                <p className="text-xs text-stone-600 leading-relaxed">{body}</p>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-stone-700 mb-4 select-none">
+            {language === "it" ? "Domande frequenti" : "FAQ"}
+          </p>
+
+          {[
+            {
+              q: language === "it" ? "Cos'è l'AEO (Answer Engine Optimization)?" : "What is AEO (Answer Engine Optimization)?",
+              a: language === "it"
+                ? "L'AEO misura quanto una pagina è facile da comprendere, estrarre e citare per motori di risposta AI come ChatGPT, Perplexity e Google AI. Valuta chiarezza semantica, definizioni, struttura e autorevolezza."
+                : "AEO measures how easy a page is to understand, extract, and cite for AI answer engines like ChatGPT, Perplexity and Google AI. It evaluates semantic clarity, definitions, structure, and authority.",
+            },
+            {
+              q: language === "it" ? "Cos'è il file llms.txt?" : "What is a llms.txt file?",
+              a: language === "it"
+                ? "llms.txt è un file di testo in chiaro nella root del sito che fornisce un riassunto conciso per i modelli linguistici AI. Aiuta i sistemi AI a comprendere e citare accuratamente il sito ed è un segnale di autorità nel punteggio AEO."
+                : "llms.txt is a plain-text file at the site root that provides a concise summary for AI language models. It helps AI systems accurately understand and cite the site, and counts as an authority signal in the AEO score.",
+            },
+            {
+              q: language === "it" ? "Come viene calcolato il carbon footprint?" : "How is carbon footprint calculated?",
+              a: language === "it"
+                ? "La stima si basa sul peso trasferito della pagina: (byte / 1 GB) × 0,8 kWh/GB × 442 g CO₂/kWh. Ridurre immagini, script e richieste inutili abbassa direttamente l'impatto per visita."
+                : "The estimate is based on transferred page weight: (bytes / 1 GB) × 0.8 kWh/GB × 442 g CO₂/kWh. Reducing images, scripts, and unnecessary requests directly lowers the impact per visit.",
+            },
+            {
+              q: language === "it" ? "UXAbility è gratuito?" : "Is UXAbility free?",
+              a: language === "it"
+                ? "Sì. UXAbility è gratuito, senza account. Inserisci qualsiasi URL per ottenere un report completo su performance, accessibilità, SEO, AEO, privacy, carbon footprint e policy dei bot AI."
+                : "Yes. UXAbility is free with no account required. Enter any URL for a full report on performance, accessibility, SEO, AEO score, privacy, carbon footprint, and AI bot policy.",
+            },
+          ].map(({ q, a }) => (
+            <details key={q} className="group border-b border-stone-200 last:border-0">
+              <summary className="flex items-center justify-between gap-4 py-3 cursor-pointer list-none text-xs font-medium text-stone-600 hover:text-stone-900 transition-colors select-none">
+                <span>{q}</span>
+                <span className="shrink-0 text-stone-600 group-open:rotate-45 transition-transform duration-200 text-base leading-none">+</span>
+              </summary>
+              <p className="pb-3 text-xs text-stone-600 leading-relaxed max-w-2xl">{a}</p>
+            </details>
+          ))}
+
+          <p className="pt-4 text-xs text-stone-600 leading-relaxed">
+            {language === "it" ? "Standard di riferimento: " : "Built on: "}
+            <a href="https://web.dev/explore/learn-core-web-vitals" target="_blank" rel="noopener noreferrer" className="underline hover:text-stone-800 transition-colors">Core Web Vitals</a>
+            {" · "}
+            <a href="https://schema.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-stone-800 transition-colors">Schema.org</a>
+            {" · "}
+            <a href="https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA" target="_blank" rel="noopener noreferrer" className="underline hover:text-stone-800 transition-colors">WAI-ARIA</a>
+            {" · "}
+            <a href="https://www.w3.org/TR/WCAG21/" target="_blank" rel="noopener noreferrer" className="underline hover:text-stone-800 transition-colors">WCAG 2.1</a>
+            {" · "}
+            <a href="https://llmstxt.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-stone-800 transition-colors">llmstxt.org</a>
+          </p>
+        </div>
+      </section>
 
       <Footer />
 

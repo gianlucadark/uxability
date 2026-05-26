@@ -8,7 +8,7 @@ export default function Navbar() {
     const { language, setLanguage, t } = useLanguage();
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-50">
+        <nav className="fixed top-0 left-0 right-0 z-50" aria-label="Navigazione principale">
             <div className="flex items-center justify-between px-6 md:px-8 h-14 bg-[#f7f4ee]/78 backdrop-blur-2xl border-b border-stone-900/10 shadow-[0_10px_30px_rgba(32,28,24,0.06)]">
                 {/* Logo */}
                 <div className="flex items-center gap-3">
@@ -32,7 +32,9 @@ export default function Navbar() {
                     <div className="hidden md:block w-px h-3 bg-stone-300" />
 
                     <button
+                        type="button"
                         onClick={() => setLanguage(language === 'it' ? 'en' : 'it')}
+                        aria-label={language === 'it' ? 'Switch language to English' : 'Cambia lingua in italiano'}
                         className="flex items-center gap-1.5 section-label text-stone-500 hover:text-stone-900 transition-colors"
                     >
                         <Languages size={12} />
@@ -42,6 +44,7 @@ export default function Navbar() {
                     <Link
                         href="https://gianlucadarcangelo.vercel.app"
                         target="_blank"
+                        rel="noopener noreferrer"
                         className="hidden sm:flex items-center gap-1.5 section-label text-stone-500 hover:text-stone-900 transition-colors"
                     >
                         <span>{t('portfolio')}</span>

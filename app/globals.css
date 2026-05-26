@@ -76,6 +76,27 @@ body {
     0 12px 26px rgba(32, 28, 24, 0.12);
 }
 
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 10001;
+  transform: translateY(calc(-100% - 1.5rem));
+  border: 1px solid rgba(32, 28, 24, 0.18);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: var(--graphite-950);
+  padding: 0.7rem 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  box-shadow: 0 16px 34px rgba(32, 28, 24, 0.18);
+  transition: transform 0.18s ease;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
 .scroll-progress {
   position: fixed;
   top: 0;
@@ -1209,10 +1230,21 @@ body::after {
     scroll-behavior: auto;
   }
 
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+
   .creative-backdrop__beam,
   .creative-backdrop__focus-frame,
   .cursor-orbit__ring,
-  .cursor-orbit__scan {
+  .cursor-orbit__scan,
+  .animate-marquee,
+  .particle-word__scanline {
     animation: none;
   }
 
@@ -1227,5 +1259,12 @@ body::after {
   .scan-chip,
   .particle-word__scanline {
     animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  :where(a, button, input, textarea, select, summary, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid CanvasText;
+    box-shadow: none;
   }
 }
