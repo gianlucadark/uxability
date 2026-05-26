@@ -30,6 +30,7 @@ const KNOWN_AI_BOTS: Array<{ name: string; provider: string; purpose: BotPurpose
     { name: "OAI-SearchBot", provider: "OpenAI", purpose: "search" },
     { name: "ChatGPT-User", provider: "OpenAI", purpose: "answers" },
     { name: "ClaudeBot", provider: "Anthropic", purpose: "training" },
+    { name: "Claude-User", provider: "Anthropic", purpose: "answers" },
     { name: "Claude-Web", provider: "Anthropic", purpose: "answers" },
     { name: "anthropic-ai", provider: "Anthropic", purpose: "training" },
     { name: "Google-Extended", provider: "Google", purpose: "training" },
@@ -107,8 +108,26 @@ function evaluateGroup(group: RobotsGroup): { status: BotStatus; disallowedPaths
         return { status: "block", disallowedPaths: ["/"] };
     }
 
-    // Partial: some paths blocked but not the whole site.
-    return { status: "partial", disallowedPaths: Array.from(new Set(meaningfulDisallows)).slice(0, 6) };
+    const uniqueDisallows = Array.from(new Set(meaningfulDisallows));
+    const publicContentIsAllowed = group.allow.includes("/");
+    const onlyTechnicalPathsBlocked = uniqueDisallows.every((path) => (
+        path === "/api" ||
+        path === "/api/" ||
+        path.startsWith("/api/") ||
+        path === "/_next" ||
+        path === "/_next/" ||
+        path.startsWith("/_next/") ||
+        path === "/admin" ||
+        path === "/admin/" ||
+        path.startsWith("/admin/")
+    ));
+
+    if (publicContentIsAllowed && onlyTechnicalPathsBlocked) {
+        return { status: "allow", disallowedPaths: uniqueDisallows.slice(0, 6) };
+    }
+
+    // Partial: some public paths are blocked but not the whole site.
+    return { status: "partial", disallowedPaths: uniqueDisallows.slice(0, 6) };
 }
 
 function findGroupForAgent(groups: RobotsGroup[], agent: string): RobotsGroup | null {

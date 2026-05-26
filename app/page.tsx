@@ -43,7 +43,7 @@ const emptyAeoSignals = {
 };
 
 const ANALYSIS_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
-const ANALYSIS_CACHE_PREFIX = "uxability:analysis:v2:";
+const ANALYSIS_CACHE_PREFIX = "uxability:analysis:v3:";
 
 interface CachedValue<T> {
   timestamp: number;
