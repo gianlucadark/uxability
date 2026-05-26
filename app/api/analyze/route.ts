@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
 
+// Heavy pages (Wikipedia, news sites) can keep PageSpeed busy for 30-45s. Default
+// Vercel serverless limit on Hobby is 10s — bump to 60s so the analyze route doesn't
+// time out before PageSpeed finishes.
+export const maxDuration = 60;
+
+const PAGESPEED_TIMEOUT_MS = 55_000;
+
 function normalizeUrl(urlStr: string) {
     try {
         const url = new URL(urlStr);
@@ -99,11 +106,36 @@ async function analyzeUrl(
         url
     )}&category=performance&category=accessibility&category=best-practices&category=seo&locale=${locale}${apiKey ? `&key=${apiKey}` : ""}`;
 
-    const response = await fetch(apiUrl);
+    let response: Response;
+    try {
+        response = await fetch(apiUrl, { signal: AbortSignal.timeout(PAGESPEED_TIMEOUT_MS) });
+    } catch (err: any) {
+        if (err?.name === "TimeoutError" || err?.name === "AbortError") {
+            throw new Error(`PageSpeed timeout (>${PAGESPEED_TIMEOUT_MS / 1000}s) for ${url}. The page is too heavy or PageSpeed is overloaded.`);
+        }
+        throw new Error(`PageSpeed network error for ${url}: ${err?.message || "unknown"}`);
+    }
+
+    if (!response.ok) {
+        // Try to read PageSpeed's structured error before failing.
+        let detail = "";
+        try {
+            const payload = await response.json();
+            detail = payload?.error?.message || JSON.stringify(payload?.error || {});
+        } catch {
+            try { detail = (await response.text()).slice(0, 240); } catch { /* ignore */ }
+        }
+        throw new Error(`PageSpeed ${response.status} for ${url}: ${detail || "no detail"}`);
+    }
+
     const data = await response.json();
 
     if (data.error) {
         throw new Error(data.error.message || "Failed to analyze " + url);
+    }
+
+    if (!data.lighthouseResult) {
+        throw new Error(`PageSpeed returned no lighthouseResult for ${url}`);
     }
 
     const lighthouse = data.lighthouseResult;
@@ -148,49 +180,11 @@ async function analyzeUrl(
     const seoScore = Math.round(categoriesData.seo.score * 100);
     const accessibilityScore = Math.round(categoriesData.accessibility.score * 100);
 
-    // AEO (Answer Engine Optimization) score — deterministic calculation from PageSpeed signals.
-    // Measures how well the page is structured for AI-driven answer engines (SGE, Perplexity, etc.).
-    // Three weighted pillars:
-    //   40% Structure:      structured-data, heading-order, meta-description, document-title
-    //   30% Content clarity: link-text, image-alt, crawlable-anchors
-    //   30% Discoverability: SEO score + canonical
-    const aeo = (() => {
-        const a = (id: string) => audits[id]?.score ?? 0;
-
-        const structuredData  = a("structured-data");
-        const headingOrder    = a("heading-order");
-        const metaDesc        = a("meta-description");
-        const docTitle        = a("document-title");
-        const linkText        = a("link-text");
-        const imageAlt        = a("image-alt");
-        const crawlable       = a("crawlable-anchors");
-        const canonical       = a("canonical");
-
-        const structure      = structuredData * 0.40 + headingOrder * 0.25 + metaDesc * 0.20 + docTitle * 0.15;
-        const clarity        = linkText * 0.40 + imageAlt * 0.40 + crawlable * 0.20;
-        const discoverability = (seoScore / 100) * 0.70 + canonical * 0.30;
-
-        const raw = structure * 0.40 + clarity * 0.30 + discoverability * 0.30;
-        return Math.round(raw * 100);
-    })();
-
-    const aeoBreakdown = {
-        structuredData:  audits["structured-data"]?.score ?? 0,
-        headingOrder:    audits["heading-order"]?.score ?? 0,
-        metaDescription: audits["meta-description"]?.score ?? 0,
-        documentTitle:   audits["document-title"]?.score ?? 0,
-        linkText:        audits["link-text"]?.score ?? 0,
-        imageAlt:        audits["image-alt"]?.score ?? 0,
-        crawlableAnchors: audits["crawlable-anchors"]?.score ?? 0,
-        canonical:       audits["canonical"]?.score ?? 1,
-    };
-
     const scores = {
         performance: Math.round(categoriesData.performance.score * 100),
         accessibility: accessibilityScore,
         bestPractices: Math.round(categoriesData["best-practices"].score * 100),
         seo: seoScore,
-        aeo,
     };
 
     const getDetailedAudits = (categoryKey: string) => {
@@ -380,7 +374,6 @@ async function analyzeUrl(
         mainThreadWork,
         keyMetrics,
         seoMetadata,
-        aeoBreakdown,
     };
 }
 

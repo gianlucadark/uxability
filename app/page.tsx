@@ -45,7 +45,7 @@ const emptyAeoSignals = {
 };
 
 const ANALYSIS_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
-const ANALYSIS_CACHE_PREFIX = "uxability:analysis:v1:";
+const ANALYSIS_CACHE_PREFIX = "uxability:analysis:v2:";
 
 interface CachedValue<T> {
   timestamp: number;
@@ -283,8 +283,8 @@ export default function Home() {
       ? "L'AEO misura quanto la pagina e facile da comprendere, estrarre e citare per motori di risposta AI come ChatGPT, Perplexity e Google AI."
       : "AEO measures how easy the page is for AI answer engines such as ChatGPT, Perplexity and Google AI to understand, extract and cite.";
     const aeoAiPdfNote = language === "it"
-      ? "La metrica AI rilegge il contenuto reale della pagina dopo il controllo HTML. Quando disponibile pesa il 35% sullo score AEO finale e valuta soprattutto chiarezza semantica, risposte dirette, definizioni, autorevolezza e citabilita."
-      : "The AI metric rereads the real page content after the HTML check. When available it weighs 35% of the final AEO score and mainly evaluates semantic clarity, direct answers, definitions, authority and citability.";
+      ? "La metrica AI rilegge il contenuto reale della pagina dopo il controllo HTML. Quando disponibile pesa il 60% sullo score AEO finale e valuta soprattutto chiarezza semantica, risposte dirette, definizioni, autorevolezza e citabilita."
+      : "The AI metric rereads the real page content after the HTML check. When available it weighs 60% of the final AEO score and mainly evaluates semantic clarity, direct answers, definitions, authority and citability.";
     const formatBytes = (bytes: number) => (
       bytes > 1024 * 1024
         ? `${(bytes / (1024 * 1024)).toFixed(2)} MB`
@@ -594,7 +594,7 @@ export default function Home() {
         addMiniMetricCard(
           t("aeo_ai_score_label"),
           aiScore === null ? "-" : `${aiScore}`,
-          aeoResult.aiEnhanced ? "35%" : t("aeo_ai_role_fallback_label"),
+          aeoResult.aiEnhanced ? "60%" : t("aeo_ai_role_fallback_label"),
           aeoMetricStartX,
           currentY + 10,
           aeoMetricWidth,
@@ -603,7 +603,7 @@ export default function Home() {
         addMiniMetricCard(
           t("aeo_pillar_structure"),
           `${aeoResult.structureScore ?? 0}`,
-          aeoResult.aiEnhanced ? "25%" : "35%",
+          aeoResult.aiEnhanced ? "15%" : "35%",
           aeoMetricStartX + (aeoMetricWidth + aeoMetricGap),
           currentY + 10,
           aeoMetricWidth,
@@ -612,7 +612,7 @@ export default function Home() {
         addMiniMetricCard(
           t("aeo_pillar_content"),
           `${aeoResult.contentScore ?? 0}`,
-          aeoResult.aiEnhanced ? "25%" : "40%",
+          aeoResult.aiEnhanced ? "15%" : "40%",
           aeoMetricStartX + (aeoMetricWidth + aeoMetricGap) * 2,
           currentY + 10,
           aeoMetricWidth,
@@ -621,7 +621,7 @@ export default function Home() {
         addMiniMetricCard(
           t("aeo_pillar_authority"),
           `${aeoResult.authorityScore ?? 0}`,
-          aeoResult.aiEnhanced ? "15%" : "25%",
+          aeoResult.aiEnhanced ? "10%" : "25%",
           aeoMetricStartX + (aeoMetricWidth + aeoMetricGap) * 3,
           currentY + 10,
           aeoMetricWidth,

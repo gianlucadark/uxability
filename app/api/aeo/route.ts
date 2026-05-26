@@ -29,6 +29,8 @@ function collectJsonLdTypes(value: unknown): string[] {
     return [...ownTypes, ...graphTypes];
 }
 
+export type AIFallbackReason = "no_api_key" | "fetch_error" | "blocked" | "invalid_response" | "model_error";
+
 export interface AEOResult {
     aeo: number;
     structureScore: number;
@@ -51,6 +53,7 @@ export interface AEOResult {
         faqSchema: number;
     };
     aiEnhanced?: boolean;
+    aiFallbackReason?: AIFallbackReason;
     error?: string;
 }
 
@@ -63,7 +66,14 @@ interface GeminiAEOAssessment {
 function calculateScores(signals: AEOSignals) {
     const structure = (signals.schema * 15 + signals.headings * 10 + signals.semantic * 8 + signals.metaDesc * 7) / 40;
     const content = (signals.qa * 15 + signals.chunks * 12 + signals.definitions * 10 + signals.answerFirst * 8) / 45;
-    const authority = (signals.author * 6 + signals.datePublished * 5 + signals.citations * 7 + signals.llmsTxt * 5 + signals.faqSchema * 8) / 31;
+
+    // Authority: base pillar uses signals every quality page can satisfy (author, date,
+    // citations). llms.txt and FAQ schema are rare extras — score them as bonuses on top,
+    // so their absence doesn't drag a well-built page to zero authority.
+    const baseAuthority = (signals.author * 6 + signals.datePublished * 5 + signals.citations * 7) / 18;
+    const llmsBonus = (signals.llmsTxt / 100) * 10;
+    const faqBonus = (signals.faqSchema / 100) * 12;
+    const authority = baseAuthority + llmsBonus + faqBonus;
 
     return {
         aeo: clamp(structure * 0.35 + content * 0.40 + authority * 0.25),
@@ -77,11 +87,14 @@ function calculateAIEnhancedTotal(
     deterministicScores: Pick<AEOResult, "structureScore" | "contentScore" | "authorityScore">,
     aiScore: number,
 ) {
+    // When the AI has actually evaluated the page, trust it as the primary signal.
+    // Deterministic values stay as a safety floor (40% combined) so a hallucinated AI
+    // response can't push a clearly broken page to 100.
     return clamp(
-        deterministicScores.structureScore * 0.25 +
-        deterministicScores.contentScore * 0.25 +
-        deterministicScores.authorityScore * 0.15 +
-        aiScore * 0.35,
+        deterministicScores.structureScore * 0.15 +
+        deterministicScores.contentScore * 0.15 +
+        deterministicScores.authorityScore * 0.10 +
+        aiScore * 0.60,
     );
 }
 
@@ -195,16 +208,47 @@ async function enhanceAEOWithGemini(
     context: ReturnType<typeof buildGeminiContext>,
 ): Promise<AEOResult> {
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY;
-    if (!apiKey) return base;
+    if (!apiKey) return { ...base, aiFallbackReason: "no_api_key" };
 
     const model = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
     const prompt = [
-        "You are scoring Answer Engine Optimization for a web page.",
-        "Return JSON only. Score each signal from 0 to 100.",
-        "Evaluate whether the page is likely to be quoted by AI answer engines: clear direct answers, question coverage, concise chunks, definitions, trustworthy authorship, publication freshness, and useful citations.",
-        "Do not reward generic SEO filler. Penalize thin content, vague claims, unclear authorship, poor source quality, or content that does not answer likely user questions.",
-        "Keep deterministic technical signals close to the provided values unless the page context proves they are misleading.",
+        "You are scoring Answer Engine Optimization (AEO) for a real web page.",
+        "Return JSON only. Score each signal from 0 to 100 based on the real page content provided.",
+        "",
+        "Important: the `deterministicSignals` block contains regex/HTML heuristics. They are *baselines*, not constraints. Override them when the page quality differs from what a regex can see. In particular:",
+        "  - multiple H1s in separate sectioning roots are valid HTML5; don't punish them as the regex does",
+        "  - lists, tables, definition lists and short paragraphs can all be valid 'answer blocks' — give credit even when the heading isn't a literal question",
+        "  - corporate landing or product pages can be highly answerable without Q&A-style headings; score by clarity of answers, not by heading form",
+        "  - long paragraphs (80-150 words) are fine for editorial content; only penalize bloat",
+        "",
+        "Reward: clear direct answers near the top of sections, concise definitions, structured data that matches content, trustworthy authorship cues, freshness signals, links to authoritative sources.",
+        "Penalize: thin content, vague marketing claims, unclear authorship, broken hierarchy, content that doesn't actually answer likely user questions, missing or stale information.",
+        "",
+        "Factual binary signals — `schema`, `llmsTxt`, `faqSchema` — require explicit page markup. If `deterministicSignals` reports 0 for these, keep them at 0 (they cannot be inferred from prose).",
+        "",
+        "SCORING CALIBRATION — anchor each signal to this scale (avoid hugging the middle out of caution):",
+        "  90-100  Exemplary: matches the best pages on the open web for this signal.",
+        "          Examples: a Wikipedia article (qa/chunks/citations), MDN docs (definitions/answerFirst), a New York Times byline (author).",
+        "  75-89   Strong: a typical well-built professional site clearly satisfies the signal.",
+        "          Examples: Stripe docs, Apple product page hero copy, a polished SaaS landing with FAQ section, a corporate About page with named author.",
+        "  60-74   Adequate: the signal is present and usable, but with notable gaps or weak execution.",
+        "  40-59   Weak: partial or shallow — the signal is hinted at but not delivered.",
+        "  20-39   Poor: barely present, mostly missing.",
+        "  0-19    Absent or broken.",
+        "",
+        "Per-signal guidance:",
+        "  - `qa`: high if the page clearly answers identifiable user questions (any heading form, any answer format). A great product page answering 'what is X / how does X work / why X' scores 80+, not 30.",
+        "  - `answerFirst`: high if sections lead with the answer (paragraph, list, table, definition, headline number) before context/marketing fluff.",
+        "  - `chunks`: high if the page reads in well-sized digestible blocks — 40-150 word paragraphs, bullet lists, scannable structure. Don't punish editorial prose.",
+        "  - `definitions`: high if key concepts are explicitly defined or have inline glossaries; medium if defined implicitly through clear examples.",
+        "  - `headings`: high if the outline is logical and the H1 conveys the page's primary subject; don't penalize multiple H1s in sectioning roots.",
+        "  - `semantic`: high if main/article/section/nav/header/footer are used purposefully, not just `div` soup.",
+        "  - `metaDesc`: high if 50-160 chars and accurately summarizes the page; partial credit for shorter but on-topic.",
+        "  - `citations`: high for pages with several outbound links to authoritative sources OR strong internal linking to canonical references; corporate sites with intentionally few outlinks can still score 70 if internal linking is excellent.",
+        "  - `author`/`datePublished`: high when explicit; partial credit for inferred (org byline, copyright year on a frequently-updated page).",
+        "",
+        "Do NOT center-clamp around 50. A great Wikipedia-like page should land 85-95 overall, a strong corporate page 70-85, a thin landing 40-55. Be willing to use the full 0-100 range.",
         "",
         "Page context:",
         JSON.stringify(context),
@@ -253,7 +297,7 @@ async function enhanceAEOWithGemini(
 
         if (!response.ok) {
             console.warn("AI AEO enhancement failed:", response.status, await response.text());
-            return base;
+            return { ...base, aiFallbackReason: "model_error" };
         }
 
         const payload = await response.json();
@@ -264,47 +308,60 @@ async function enhanceAEOWithGemini(
             .trim();
 
         if (!text) {
-            console.warn("AI AEO enhancement returned no text:", candidate?.finishReason || payload?.promptFeedback?.blockReason || "unknown");
-            return base;
+            const blockReason = candidate?.finishReason || payload?.promptFeedback?.blockReason || "unknown";
+            console.warn("AI AEO enhancement returned no text:", blockReason);
+            return { ...base, aiFallbackReason: blockReason.toString().toLowerCase().includes("block") ? "blocked" : "invalid_response" };
         }
 
         const parsed = extractJsonObject(text) as GeminiAEOAssessment | null;
         if (!parsed?.signals) {
             console.warn("AI AEO enhancement returned invalid JSON:", text.slice(0, 240));
-            return base;
+            return { ...base, aiFallbackReason: "invalid_response" };
         }
 
         const aiSignals = parsed.signals || {};
         const refinedSignals = { ...base.signals };
         const aiOnlySignals = { ...base.signals };
-        const baseScores = calculateScores(base.signals);
+
+        // AI gets primary weight on judgement signals AND on structural signals where the
+        // regex only sees presence/absence (the AI can tell good schema from boilerplate).
+        // Pure-factual binaries (schema, llmsTxt, faqSchema) stay at 25% so the AI can't
+        // hallucinate markup that isn't there.
+        const aiPrimaryKeys = new Set<keyof AEOSignals>([
+            "qa", "chunks", "definitions", "answerFirst",
+            "citations", "author", "datePublished",
+            "headings", "semantic", "metaDesc",
+        ]);
 
         (Object.keys(refinedSignals) as Array<keyof AEOSignals>).forEach((key) => {
             const aiValue = boundedSignal(aiSignals[key]);
             if (aiValue === null) return;
 
             const baseValue = refinedSignals[key];
-            const aiWeight = ["qa", "chunks", "definitions", "answerFirst", "citations", "author", "datePublished"].includes(key)
-                ? 0.65
-                : 0.25;
+            const aiWeight = aiPrimaryKeys.has(key) ? 0.65 : 0.25;
 
             aiOnlySignals[key] = aiValue;
             refinedSignals[key] = clamp(baseValue * (1 - aiWeight) + aiValue * aiWeight);
         });
 
         const aiScore = calculateScores(aiOnlySignals).aeo;
+        // Pillars shown in the UI use REFINED signals (AI+deterministic blend) when AI ran.
+        // Showing raw deterministic pillars next to a high AI score is misleading — e.g.
+        // Wikipedia's "History" H2s get qa=0 deterministically but the AI correctly sees
+        // them as answerable. The refined blend reflects what the analyzer actually believes.
+        const refinedScores = calculateScores(refinedSignals);
 
         return {
             ...base,
-            ...baseScores,
-            aeo: calculateAIEnhancedTotal(baseScores, aiScore),
+            ...refinedScores,
+            aeo: calculateAIEnhancedTotal(refinedScores, aiScore),
             aiScore,
             signals: refinedSignals,
             aiEnhanced: true,
         };
     } catch (error) {
         console.warn("AI AEO enhancement error:", error);
-        return base;
+        return { ...base, aiFallbackReason: "fetch_error" };
     }
 }
 
@@ -375,10 +432,23 @@ async function computeAEO(url: string): Promise<AEOResult> {
     const jsonLdTypes = parsedJsonLd.flatMap(collectJsonLdTypes);
 
     // Structure signals
-    const schemaScore = parsedJsonLd.length > 0 ? 100 : 0;
+    // Schema scored by richness, not mere presence — boilerplate Organization shouldn't
+    // tie with a page that ships Article + Product + FAQPage.
+    const richSchemaTypes = new Set(["article", "newsarticle", "blogposting", "product", "recipe", "howto", "faqpage", "question", "course", "event", "review"]);
+    const richHits = jsonLdTypes.filter((t) => richSchemaTypes.has(t)).length;
+    const schemaScore = parsedJsonLd.length === 0
+        ? 0
+        : richHits > 0
+            ? clamp(70 + Math.min(richHits, 3) * 10)
+            : 60;
 
     const h1Count = $("h1").length;
-    let headingViolations = h1Count === 1 ? 0 : Math.abs(h1Count - 1);
+    // HTML5 allows multiple H1s in distinct sectioning roots. Only flag the clear failures:
+    // no H1 at all (severe) or >3 H1s (likely abuse).
+    let headingViolations = 0;
+    if (h1Count === 0) headingViolations += 2;
+    else if (h1Count > 3) headingViolations += 1;
+
     let lastLevel = 0;
     $("h1,h2,h3,h4,h5,h6").each((_, el) => {
         const tagName = String($(el).prop("tagName") || "");
@@ -386,23 +456,54 @@ async function computeAEO(url: string): Promise<AEOResult> {
         if (level > lastLevel + 1) headingViolations++;
         lastLevel = level;
     });
-    const headingsScore = clamp(Math.max(0, 100 - headingViolations * 20));
+    const headingsScore = clamp(Math.max(0, 100 - headingViolations * 15));
 
     const semanticCount = $("article, section, main, nav, aside, header, footer").length;
     const semanticScore = clamp((semanticCount / 4) * 100);
 
     const metaDescContent = $('meta[name="description"]').attr("content") || "";
-    const metaDescScore = metaDescContent.length >= 50 ? 100 : metaDescContent.length > 0 ? 50 : 0;
+    const metaDescLen = metaDescContent.length;
+    // Google guideline: ~50-160 chars. Reward the sweet spot, penalize too short or too long.
+    const metaDescScore = metaDescLen === 0
+        ? 0
+        : metaDescLen < 50
+            ? clamp((metaDescLen / 50) * 60)
+            : metaDescLen <= 160
+                ? 100
+                : metaDescLen <= 300
+                    ? clamp(100 - ((metaDescLen - 160) / 140) * 30)
+                    : 60;
 
     // Content signals
+    // qa: a section is "answerable" if its heading is a question OR it's immediately
+    // followed by a concise answer block (short paragraph, list, table, definition list).
+    // The original logic punished any non-Q&A page; in reality landing/product pages
+    // can be highly answerable without literal question headings.
     const interrogRe = /^(come|perche|cosa|quando|dove|chi|what|how|why|is|does|can|are|which|who|where|when)\b/i;
-    let interrogCount = 0;
+    const answerBlockTags = new Set(["ul", "ol", "dl", "table"]);
+    let answerableCount = 0;
     let totalH23 = 0;
     $("h2, h3").each((_, el) => {
         totalH23++;
-        if (interrogRe.test(normalizeText($(el).text()))) interrogCount++;
+        const text = normalizeText($(el).text());
+        if (interrogRe.test(text)) {
+            answerableCount++;
+            return;
+        }
+        const next = $(el).next();
+        if (!next.length) return;
+        const tag = String(next.prop("tagName") || "").toLowerCase();
+        if (answerBlockTags.has(tag)) {
+            answerableCount++;
+            return;
+        }
+        if (tag === "p") {
+            const txt = next.text().trim();
+            const sentenceCount = txt.split(/[.!?]+\s+/).filter((s) => s.length > 5).length;
+            if (txt.length <= 400 && sentenceCount <= 3 && txt.length > 0) answerableCount++;
+        }
     });
-    const qaScore = totalH23 > 0 ? clamp((interrogCount / totalH23) * 100) : 0;
+    const qaScore = totalH23 > 0 ? clamp((answerableCount / totalH23) * 100) : 0;
 
     const pLengths = $("p").toArray()
         .map((el) => $(el).text().trim().split(/\s+/).filter(Boolean).length)
@@ -410,41 +511,60 @@ async function computeAEO(url: string): Promise<AEOResult> {
     let chunksScore = 0;
     if (pLengths.length > 0) {
         const avg = pLengths.reduce((a, b) => a + b, 0) / pLengths.length;
-        chunksScore = avg >= 40 && avg <= 80
+        // Wider sweet-spot (40-140 words) — editorial prose is fine. Only real bloat hurts.
+        chunksScore = avg >= 40 && avg <= 140
             ? 100
             : avg < 40
                 ? clamp((avg / 40) * 100)
-                : clamp((80 / avg) * 100);
+                : clamp((140 / avg) * 100);
     }
 
-    const defPatterns = (bodyText.match(/\b[\w-]+\s+(e|is|are|defined as|means|refers to)\s/gi) || []).length;
-    const definitionsScore = clamp(Math.min(100, ((defPatterns + $("dl").length) / 3) * 100));
+    // Definitions: avoid Italian "e" (conjunction) — match only English "is/are/means/…"
+    // or explicit Italian "è/sono/significa/si definisce".
+    const defEnglish = (bodyText.match(/\b[\w-]+\s+(is|are|defined as|means|refers to)\s/gi) || []).length;
+    const defItalian = (bodyText.match(/\b[\w-]+\s+(e' |e |sono |significa |si definisce |si intende )/gi) || []).length;
+    // Body text was normalized so "è" became "e" with a trailing space. To avoid matching
+    // the conjunction "e", require it to be preceded by a noun-like token and followed by
+    // an adjective/article — approximated by lookahead for common Italian copula patterns:
+    const defItalianStrict = (bodyText.match(/\b[\w-]+\s+e\s+(un|una|uno|il|la|lo|i|gli|le|definito|definita)\b/gi) || []).length;
+    const defTotal = defEnglish + defItalian + defItalianStrict + $("dl").length;
+    const definitionsScore = clamp(Math.min(100, (defTotal / 4) * 100));
 
+    // answerFirst: section opens with a concise paragraph OR an answer block (list/table/dl).
     let afRespected = 0;
     let afTotal = 0;
     $("h2, h3").each((_, el) => {
         afTotal++;
-        const firstP = $(el).nextAll("p").first();
-        const wordCount = firstP.text().trim().split(/\s+/).filter(Boolean).length;
-        if (firstP.length && wordCount <= 100) afRespected++;
+        const firstBlock = $(el).nextUntil("h1, h2, h3").first();
+        if (!firstBlock.length) return;
+        const tag = String(firstBlock.prop("tagName") || "").toLowerCase();
+        if (answerBlockTags.has(tag)) {
+            afRespected++;
+            return;
+        }
+        if (tag === "p") {
+            const wordCount = firstBlock.text().trim().split(/\s+/).filter(Boolean).length;
+            if (wordCount > 0 && wordCount <= 120) afRespected++;
+        }
     });
     const answerFirstScore = afTotal > 0 ? clamp((afRespected / afTotal) * 100) : 0;
 
-    // Authority signals
-    const authorScore = (
-        $('meta[name="author"]').length > 0 ||
+    // Authority signals — graded, not binary. A site with byline class but no schema
+    // shouldn't score the same zero as a site with no authorship cue at all.
+    const authorExplicit = $('meta[name="author"]').length > 0 ||
         $('[rel="author"]').length > 0 ||
-        $('[itemprop="author"], [class*="author"], [class*="byline"]').length > 0 ||
+        $('[itemprop="author"]').length > 0 ||
         htmlLower.includes('"author"') ||
-        jsonLdTypes.includes("person")
-    ) ? 100 : 0;
+        jsonLdTypes.includes("person");
+    const authorWeak = $('[class*="author"], [class*="byline"]').length > 0;
+    const authorScore = authorExplicit ? 100 : authorWeak ? 60 : 0;
 
-    const datePublishedScore = (
-        $('meta[property="article:published_time"]').length > 0 ||
+    const dateExplicit = $('meta[property="article:published_time"]').length > 0 ||
         $('[itemprop="datePublished"]').length > 0 ||
-        $("time[datetime]").length > 0 ||
-        htmlLower.includes('"datepublished"')
-    ) ? 100 : 0;
+        htmlLower.includes('"datepublished"');
+    const dateTimeTag = $("time[datetime]").length > 0;
+    const dateCopyright = /\b(©|copyright|\(c\))\s*\d{4}/i.test(html);
+    const datePublishedScore = dateExplicit ? 100 : dateTimeTag ? 70 : dateCopyright ? 40 : 0;
 
     const externalLinks = $("a[href]").toArray().filter((el) => {
         const href = $(el).attr("href") || "";
@@ -454,7 +574,9 @@ async function computeAEO(url: string): Promise<AEOResult> {
             return false;
         }
     }).length;
-    const citationsScore = clamp((externalLinks / 5) * 100);
+    // Log-saturated: 4 links ≈ 63, 8 ≈ 86, 12 ≈ 95. Forgiving for sites with a handful
+    // of curated outbound links instead of demanding 5+ to start scoring.
+    const citationsScore = clamp(Math.round(100 * (1 - Math.exp(-externalLinks / 4))));
 
     const faqScore = jsonLdTypes.includes("faqpage") || jsonLdTypes.includes("howto") ? 100 : 0;
 

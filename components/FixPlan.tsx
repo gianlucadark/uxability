@@ -196,6 +196,8 @@ function getLabels(language: "it" | "en") {
         subtitle: "Azioni ordinate per impatto, facilita e confidenza. Parti dalle prime: sono quelle con il miglior rapporto sforzo/risultato.",
         topMove: "Mossa consigliata",
         empty: "Nessun fix prioritario rilevato dai dati disponibili.",
+        showMore: "Mostra altri fix",
+        hideMore: "Nascondi fix",
         showDetails: "Mostra implementazione",
         hideDetails: "Nascondi implementazione",
         implementation: "Come intervenire",
@@ -225,6 +227,8 @@ function getLabels(language: "it" | "en") {
         subtitle: "Actions ranked by impact, ease, and confidence. Start from the first ones: they have the best effort/result ratio.",
         topMove: "Recommended move",
         empty: "No priority fixes detected from the available data.",
+        showMore: "Show more fixes",
+        hideMore: "Hide fixes",
         showDetails: "Show implementation",
         hideDetails: "Hide implementation",
         implementation: "How to fix",
@@ -254,11 +258,14 @@ function getLabels(language: "it" | "en") {
 export default function FixPlan({ result, aeoResult, privacyResult }: FixPlanProps) {
   const { language } = useLanguage();
   const labels = getLabels(language);
+  const [showAllFixes, setShowAllFixes] = useState(false);
   const suggestions = useMemo(
     () => buildFixSuggestions({ result, aeoResult, privacyResult, language }),
     [result, aeoResult, privacyResult, language],
   );
   const topFix = suggestions[0];
+  const primaryFix = suggestions[0];
+  const additionalFixes = suggestions.slice(1);
 
   if (!suggestions.length) {
     return (
@@ -298,9 +305,38 @@ export default function FixPlan({ result, aeoResult, privacyResult }: FixPlanPro
 
       <div className="card p-3 md:p-4">
         <div className="space-y-3">
-          {suggestions.map((fix, index) => (
-            <FixCard key={fix.id} fix={fix} index={index} labels={labels} />
-          ))}
+          {primaryFix && <FixCard key={primaryFix.id} fix={primaryFix} index={0} labels={labels} />}
+
+          <AnimatePresence initial={false}>
+            {showAllFixes && additionalFixes.length > 0 && (
+              <motion.div
+                key="additional-fixes"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="space-y-3 overflow-hidden"
+              >
+                {additionalFixes.map((fix, index) => (
+                  <FixCard key={fix.id} fix={fix} index={index + 1} labels={labels} />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {additionalFixes.length > 0 && (
+            <button
+              onClick={() => setShowAllFixes((value) => !value)}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-stone-900/10 bg-stone-50/70 px-4 py-3 text-xs font-black uppercase tracking-widest text-stone-500 transition hover:border-stone-900/20 hover:bg-white hover:text-stone-800"
+            >
+              <span>
+                {showAllFixes ? labels.hideMore : `${labels.showMore} (${additionalFixes.length})`}
+              </span>
+              <motion.span animate={{ rotate: showAllFixes ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                <ChevronDown size={15} />
+              </motion.span>
+            </button>
+          )}
         </div>
       </div>
     </section>

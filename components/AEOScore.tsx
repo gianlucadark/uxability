@@ -21,6 +21,8 @@ export interface AEOSignals {
     faqSchema: number;
 }
 
+export type AIFallbackReason = "no_api_key" | "fetch_error" | "blocked" | "invalid_response" | "model_error";
+
 export interface AEOResult {
     aeo: number;
     structureScore: number;
@@ -29,6 +31,7 @@ export interface AEOResult {
     aiScore?: number;
     signals: AEOSignals;
     aiEnhanced?: boolean;
+    aiFallbackReason?: AIFallbackReason;
     error?: string;
 }
 
@@ -107,7 +110,8 @@ export default function AEOScore({ result }: AEOScoreProps) {
 
     const score = result?.aeo ?? 0;
     const color = getColor(score);
-    const aiScore = result?.aiEnhanced ? (result.aiScore ?? score) : 0;
+    const aiAvailable = !!result?.aiEnhanced;
+    const aiScoreValue: number | null = aiAvailable ? (result?.aiScore ?? score) : null;
     const aiTone = result?.aiEnhanced
         ? {
             panel: "bg-emerald-500/8 border-emerald-500/20",
@@ -275,31 +279,37 @@ export default function AEOScore({ result }: AEOScoreProps) {
                                 {[
                                     {
                                         label: t("aeo_ai_score_label"),
-                                        value: aiScore,
-                                        weight: result.aiEnhanced ? "35%" : t("aeo_ai_role_fallback_label"),
-                                        color: result.aiEnhanced ? "#0f8f68" : "#b7791f",
+                                        value: aiScoreValue,
+                                        weight: aiAvailable ? "60%" : t("aeo_ai_role_fallback_label"),
+                                        color: aiAvailable ? undefined : "#a8a29e",
                                         delay: 0.2,
                                     },
-                                    { label: t("aeo_pillar_structure"), value: result.structureScore, weight: result.aiEnhanced ? "25%" : "35%" },
-                                    { label: t("aeo_pillar_content"),   value: result.contentScore,   weight: result.aiEnhanced ? "25%" : "40%" },
-                                    { label: t("aeo_pillar_authority"), value: result.authorityScore, weight: result.aiEnhanced ? "15%" : "25%" },
+                                    { label: t("aeo_pillar_structure"), value: result.structureScore, weight: aiAvailable ? "15%" : "35%" },
+                                    { label: t("aeo_pillar_content"),   value: result.contentScore,   weight: aiAvailable ? "15%" : "40%" },
+                                    { label: t("aeo_pillar_authority"), value: result.authorityScore, weight: aiAvailable ? "10%" : "25%" },
                                 ].map((p, i) => {
-                                    const c = p.color || (p.value >= 70 ? "#0f8f68" : p.value >= 40 ? "#b7791f" : "#bd3150");
+                                    const isUnavailable = p.value === null;
+                                    const numericValue = isUnavailable ? 0 : (p.value as number);
+                                    const c = isUnavailable
+                                        ? "#a8a29e"
+                                        : (p.color || (numericValue >= 70 ? "#0f8f68" : numericValue >= 40 ? "#b7791f" : "#bd3150"));
                                     return (
                                         <div key={i} className="space-y-1">
                                             <div className="flex justify-between text-xs text-stone-500">
                                                 <span>{p.label}</span>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-stone-500">{p.weight}</span>
-                                                    <span className="font-mono font-bold" style={{ color: c }}>{p.value}</span>
+                                                    <span className="font-mono font-bold" style={{ color: c }}>
+                                                        {isUnavailable ? "—" : numericValue}
+                                                    </span>
                                                 </div>
                                             </div>
                                             <div className="h-1.5 rounded-full bg-stone-200 overflow-hidden">
                                                 <motion.div
                                                     className="h-full rounded-full"
-                                                    style={{ backgroundColor: c }}
+                                                    style={{ backgroundColor: c, opacity: isUnavailable ? 0.35 : 1 }}
                                                     initial={{ width: 0 }}
-                                                    animate={{ width: `${p.value}%` }}
+                                                    animate={{ width: `${isUnavailable ? 100 : numericValue}%` }}
                                                     transition={{ duration: 0.9, ease: "easeOut", delay: (p.delay ?? 0.3) + i * 0.1 }}
                                                 />
                                             </div>
