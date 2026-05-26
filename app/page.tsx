@@ -44,6 +44,59 @@ const emptyAeoSignals = {
   faqSchema: 0,
 };
 
+const ANALYSIS_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const ANALYSIS_CACHE_PREFIX = "uxability:analysis:v1:";
+
+interface CachedValue<T> {
+  timestamp: number;
+  value: T;
+}
+
+function normalizeAnalysisUrl(value: string): string {
+  try {
+    const parsed = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`);
+    parsed.hash = "";
+    parsed.hostname = parsed.hostname.toLowerCase();
+    return parsed.toString();
+  } catch {
+    return value.trim();
+  }
+}
+
+function getCachedValue<T>(key: string): T | null {
+  try {
+    const raw = window.localStorage.getItem(`${ANALYSIS_CACHE_PREFIX}${key}`);
+    if (!raw) return null;
+
+    const cached = JSON.parse(raw) as CachedValue<T>;
+    if (!cached?.timestamp || Date.now() - cached.timestamp > ANALYSIS_CACHE_TTL_MS) {
+      window.localStorage.removeItem(`${ANALYSIS_CACHE_PREFIX}${key}`);
+      return null;
+    }
+
+    return cached.value;
+  } catch {
+    return null;
+  }
+}
+
+function setCachedValue<T>(key: string, value: T) {
+  try {
+    const cached: CachedValue<T> = { timestamp: Date.now(), value };
+    window.localStorage.setItem(`${ANALYSIS_CACHE_PREFIX}${key}`, JSON.stringify(cached));
+  } catch {
+    // localStorage can be unavailable or full; analysis should still work normally.
+  }
+}
+
+function shouldCacheResult(value: unknown): boolean {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    !("error" in value),
+  );
+}
+
 function LLMsTxtSkeleton() {
   return (
     <div className="card p-4 md:p-5 animate-pulse" aria-label="Loading llms.txt generator">
@@ -86,8 +139,8 @@ export default function Home() {
 
     // Simple URL validation
     try {
-      new URL(url.startsWith('http') ? url : `https://${url}`);
-    } catch (e) {
+      new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`);
+    } catch {
       setError(t('invalidUrl'));
       return;
     }
@@ -103,51 +156,70 @@ export default function Home() {
     analysisRunRef.current = runId;
 
     try {
-      const formattedUrl = url.startsWith('http') ? url : `https://${url}`;
+      const formattedUrl = normalizeAnalysisUrl(url);
+      const aeoCacheKey = `aeo:${formattedUrl}`;
+      const privacyCacheKey = `privacy:${formattedUrl}`;
+      const analyzeCacheKey = `analyze:${formattedUrl}:${language}:${crawlInternalPages ? maxExtraUrls + 1 : 1}`;
       const aeoFallback = { error: "fetch_failed", aeo: 0, structureScore: 0, contentScore: 0, authorityScore: 0, signals: emptyAeoSignals };
       const privacyFallback = { error: "fetch_failed", privacyScore: 50, grade: "C", trackers: [], thirdPartyDomains: 0, consentDetected: false, adCount: 0, analyticsCount: 0, functionalCount: 0 };
+      const cachedAeo = getCachedValue<typeof aeoFallback>(aeoCacheKey);
+      const cachedPrivacy = getCachedValue<typeof privacyFallback>(privacyCacheKey);
+      const cachedAnalyze = getCachedValue<{ results: NonNullable<typeof results> }>(analyzeCacheKey);
 
-      const aeoPromise = fetch("/api/aeo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: formattedUrl }),
-      })
-        .then(async (response) => {
-          const data = await response.json();
-          return response.ok ? data : { ...aeoFallback, error: data.error || "fetch_failed" };
-        })
-        .catch(() => aeoFallback);
+      if (cachedAeo) setAeoResult(cachedAeo);
+      if (cachedPrivacy) setPrivacyResult(cachedPrivacy);
 
-      const privacyPromise = fetch("/api/privacy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: formattedUrl }),
-      })
-        .then(async (response) => response.ok ? response.json() : privacyFallback)
-        .catch(() => privacyFallback);
-
-      const analyzeResponse = await fetch("/api/analyze", {
+      const aeoPromise = cachedAeo
+        ? Promise.resolve(cachedAeo)
+        : fetch("/api/aeo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            url: formattedUrl,
-            lang: language,
-            fast: !crawlInternalPages,
-            maxPages: crawlInternalPages ? maxExtraUrls + 1 : 1,
-          }),
-      });
+          body: JSON.stringify({ url: formattedUrl }),
+        })
+          .then(async (response) => {
+            const data = await response.json();
+            const result = response.ok ? data : { ...aeoFallback, error: data.error || "fetch_failed" };
+            if (shouldCacheResult(result)) setCachedValue(aeoCacheKey, result);
+            return result;
+          })
+          .catch(() => aeoFallback);
+
+      const privacyPromise = cachedPrivacy
+        ? Promise.resolve(cachedPrivacy)
+        : fetch("/api/privacy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: formattedUrl }),
+        })
+          .then(async (response) => {
+            const result = response.ok ? await response.json() : privacyFallback;
+            if (shouldCacheResult(result)) setCachedValue(privacyCacheKey, result);
+            return result;
+          })
+          .catch(() => privacyFallback);
+
+      const data = cachedAnalyze
+        ? cachedAnalyze
+        : await fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              url: formattedUrl,
+              lang: language,
+              fast: !crawlInternalPages,
+              maxPages: crawlInternalPages ? maxExtraUrls + 1 : 1,
+            }),
+        }).then(async (response) => {
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || t("analysisError"));
+          if (shouldCacheResult(payload)) setCachedValue(analyzeCacheKey, payload);
+          return payload;
+        });
 
       if (runId !== analysisRunRef.current) return;
 
-      const data = await analyzeResponse.json();
-      if (analyzeResponse.ok) {
-        setResults(data.results);
-        setLoading(false);
-      } else {
-        setError(data.error || t("analysisError"));
-        setLoading(false);
-        return;
-      }
+      setResults(data.results);
+      setLoading(false);
 
       void Promise.allSettled([aeoPromise, privacyPromise]).then(([aeoSettled, privacySettled]) => {
         if (runId !== analysisRunRef.current) return;
@@ -156,7 +228,9 @@ export default function Home() {
         setPrivacyResult(privacySettled.status === "fulfilled" ? privacySettled.value : privacyFallback);
       });
     } catch (err) {
-      if (runId === analysisRunRef.current) setError(t('connectionError'));
+      if (runId === analysisRunRef.current) {
+        setError(err instanceof Error ? err.message : t('connectionError'));
+      }
       setLoading(false);
     }
   };
