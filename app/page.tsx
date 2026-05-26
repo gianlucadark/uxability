@@ -1,30 +1,33 @@
 "use client";
 
 import { useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Loader2, ArrowRight, CheckCircle2, Globe, FileText, Zap, Bot, Radar, Network } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CreativeBackdrop from "@/components/CreativeBackdrop";
-import ScoreCircle from "@/components/ScoreCircle";
-import OpportunityCard from "@/components/OpportunityCard";
-import AuditModal from "@/components/AuditModal";
-import FieldDataBadges from "@/components/FieldDataBadges";
-import ResourceBreakdown from "@/components/ResourceBreakdown";
-import MainThreadBreakdown from "@/components/MainThreadBreakdown";
-import LabMetrics from "@/components/LabMetrics";
-import AIRecommendation from "@/components/AIRecommendation";
-import FixPlan from "@/components/FixPlan";
-import FrustrationIndex from "@/components/FrustrationIndex";
-import SocialPreview from "@/components/SocialPreview";
-import AEOScore from "@/components/AEOScore";
-import ShareScoreCard from "@/components/ShareScoreCard";
-import LLMsTxtGenerator from "@/components/LLMsTxtGenerator";
-import CarbonScore from "@/components/CarbonScore";
-import PrivacyScore from "@/components/PrivacyScore";
-import AIBotPolicy, { type BotPolicyResult } from "@/components/AIBotPolicy";
-import ParticleWord from "@/components/ParticleWord";
+import type { BotPolicyResult } from "@/components/AIBotPolicy";
 import { useLanguage } from "@/context/LanguageContext";
+
+const ScoreCircle = dynamic(() => import("@/components/ScoreCircle"));
+const OpportunityCard = dynamic(() => import("@/components/OpportunityCard"));
+const AuditModal = dynamic(() => import("@/components/AuditModal"));
+const FieldDataBadges = dynamic(() => import("@/components/FieldDataBadges"));
+const ResourceBreakdown = dynamic(() => import("@/components/ResourceBreakdown"));
+const MainThreadBreakdown = dynamic(() => import("@/components/MainThreadBreakdown"));
+const LabMetrics = dynamic(() => import("@/components/LabMetrics"));
+const AIRecommendation = dynamic(() => import("@/components/AIRecommendation"));
+const FixPlan = dynamic(() => import("@/components/FixPlan"));
+const FrustrationIndex = dynamic(() => import("@/components/FrustrationIndex"));
+const SocialPreview = dynamic(() => import("@/components/SocialPreview"));
+const AEOScore = dynamic(() => import("@/components/AEOScore"));
+const ShareScoreCard = dynamic(() => import("@/components/ShareScoreCard"));
+const LLMsTxtGenerator = dynamic(() => import("@/components/LLMsTxtGenerator"));
+const CarbonScore = dynamic(() => import("@/components/CarbonScore"));
+const PrivacyScore = dynamic(() => import("@/components/PrivacyScore"));
+const AIBotPolicy = dynamic(() => import("@/components/AIBotPolicy"));
+const ParticleWord = dynamic(() => import("@/components/ParticleWord"));
 
 const emptyAeoSignals = {
   schema: 0,
@@ -996,7 +999,9 @@ export default function Home() {
             className="relative max-w-2xl mx-auto"
           >
             <div className="mb-2 flex items-center justify-between px-2">
-              <span className="section-label text-stone-600">Enter URL</span>
+              <label htmlFor="audit-url" className="section-label text-stone-600">
+                {language === "it" ? "URL sito" : "Enter URL"}
+              </label>
               <span className="hidden sm:inline section-label text-stone-600">Audit Command</span>
             </div>
             <div className="relative group w-full flex items-center">
@@ -1008,7 +1013,6 @@ export default function Home() {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder={t('inputPlaceholder')}
-                aria-label={language === "it" ? "URL del sito da analizzare" : "Website URL to analyze"}
                 className="w-full h-14 md:h-16 pl-12 md:pl-14 pr-[120px] md:pr-40 input-premium text-base md:text-lg placeholder:opacity-40"
               />
               <Search className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-stone-500 opacity-60 group-focus-within:text-stone-900 transition-colors pointer-events-none" size={20} />
@@ -1050,15 +1054,14 @@ export default function Home() {
               </label>
 
               <div className="flex items-center gap-1.5">
-                <span className="font-medium">
+                <label htmlFor="max-extra-urls" className="font-medium">
                   {language === "it" ? "URL extra" : "Extra URLs"}
-                </span>
+                </label>
                 <select
                   id="max-extra-urls"
                   value={maxExtraUrls}
                   onChange={(event) => setMaxExtraUrls(Number(event.target.value))}
                   disabled={!crawlInternalPages || loading}
-                  aria-label={language === "it" ? "Numero di URL extra da analizzare" : "Number of extra URLs to analyze"}
                   className="h-7 rounded-md border border-stone-900/10 bg-white/50 px-2 text-xs font-bold text-stone-700 outline-none transition disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {[1, 2, 3].map((count) => (
@@ -1381,9 +1384,9 @@ export default function Home() {
         aria-label={language === "it" ? "Domande frequenti" : "Frequently asked questions"}
       >
         <div className="border-t border-stone-100 pt-10 space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-stone-700 mb-6 select-none">
+          <h2 className="text-[11px] font-semibold uppercase tracking-widest text-stone-700 mb-6 select-none">
             {language === "it" ? "Cosa analizza UXAbility" : "What UXAbility analyzes"}
-          </p>
+          </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 mb-8">
             {[
@@ -1419,9 +1422,9 @@ export default function Home() {
             ))}
           </div>
 
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-stone-700 mb-4 select-none">
+          <h2 className="text-[11px] font-semibold uppercase tracking-widest text-stone-700 mb-4 select-none">
             {language === "it" ? "Domande frequenti" : "FAQ"}
-          </p>
+          </h2>
 
           {[
             {

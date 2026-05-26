@@ -34,7 +34,7 @@ export default function Navbar() {
                     <button
                         type="button"
                         onClick={() => setLanguage(language === 'it' ? 'en' : 'it')}
-                        aria-label={language === 'it' ? 'Switch language to English' : 'Cambia lingua in italiano'}
+                        title={language === 'it' ? 'Switch language to English' : 'Cambia lingua in italiano'}
                         className="flex items-center gap-1.5 section-label text-stone-500 hover:text-stone-900 transition-colors"
                     >
                         <Languages size={12} />

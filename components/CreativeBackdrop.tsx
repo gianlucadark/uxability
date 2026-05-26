@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, useMotionValue, useScroll, useSpring } from "framer-motion";
-import Lenis from "lenis";
 
 export default function CreativeBackdrop() {
   const rawX = useMotionValue(-120);
@@ -21,25 +20,49 @@ export default function CreativeBackdrop() {
     const finePointer = window.matchMedia("(pointer: fine)");
     if (reduceMotion.matches || !finePointer.matches) return;
 
-    const lenis = new Lenis({
-      duration: 1.05,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-      wheelMultiplier: 0.82,
-      touchMultiplier: 1,
-    });
-
     let frame = 0;
-    const raf = (time: number) => {
-      lenis.raf(time);
+    let destroyed = false;
+    let cleanup: (() => void) | null = null;
+
+    const startSmoothScroll = async () => {
+      const { default: Lenis } = await import("lenis");
+      if (destroyed) return;
+
+      const lenis = new Lenis({
+        duration: 0.95,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        smoothWheel: true,
+        wheelMultiplier: 0.82,
+        touchMultiplier: 1,
+      });
+
+      const raf = (time: number) => {
+        lenis.raf(time);
+        frame = requestAnimationFrame(raf);
+      };
+
       frame = requestAnimationFrame(raf);
+      cleanup = () => {
+        cancelAnimationFrame(frame);
+        lenis.destroy();
+      };
     };
 
-    frame = requestAnimationFrame(raf);
+    let idleCallbackId: number | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    if (typeof window.requestIdleCallback === "function") {
+      idleCallbackId = window.requestIdleCallback(() => void startSmoothScroll(), { timeout: 1600 });
+    } else {
+      timeoutId = globalThis.setTimeout(() => void startSmoothScroll(), 900);
+    }
 
     return () => {
-      cancelAnimationFrame(frame);
-      lenis.destroy();
+      destroyed = true;
+      if (idleCallbackId !== null && typeof window.cancelIdleCallback === "function") {
+        window.cancelIdleCallback(idleCallbackId);
+      }
+      if (timeoutId !== null) globalThis.clearTimeout(timeoutId);
+      cleanup?.();
     };
   }, []);
 
