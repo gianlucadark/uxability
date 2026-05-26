@@ -13,6 +13,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const socialPreviewImage = {
+  url: "/uxability-social-preview.png",
+  width: 1915,
+  height: 906,
+  alt: "UXAbility - Make the web readable.",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://uxability.vercel.app"),
   title: {
@@ -43,11 +50,13 @@ export const metadata: Metadata = {
     siteName: "UXAbility",
     title: "UXAbility | Audit SEO, Performance, AEO e Privacy",
     description: "Crawl intelligente per misurare performance, accessibilita, SEO, leggibilita per AI, privacy e sostenibilita del tuo sito.",
+    images: [socialPreviewImage],
   },
   twitter: {
     card: "summary_large_image",
     title: "UXAbility | Audit SEO, Performance, AEO e Privacy",
     description: "Analizza il tuo sito con report completi su Core Web Vitals, SEO, accessibilita, AEO, privacy e bot AI.",
+    images: [socialPreviewImage],
   },
   robots: {
     index: true,
