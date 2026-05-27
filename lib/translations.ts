@@ -50,8 +50,8 @@ export const translations = {
 
         // Errors
         invalidUrl: "Inserisci un URL valido (es. google.com)",
-        analysisError: "Errore durante l'analisi. Riprova.",
-        connectionError: "Impossibile connettersi al server.",
+        analysisError: "Non siamo riusciti a completare l'analisi. Riprova tra poco o verifica che il sito sia raggiungibile.",
+        connectionError: "Non riusciamo a collegarci al servizio in questo momento. Riprova tra poco.",
 
         // Components labels
         visualInsights: "Insight Visivi",
@@ -412,8 +412,8 @@ export const translations = {
 
         // Errors
         invalidUrl: "Enter a valid URL (e.g., google.com)",
-        analysisError: "Error during analysis. Please try again.",
-        connectionError: "Unable to connect to the server.",
+        analysisError: "We could not complete the analysis. Try again shortly or check that the site is reachable.",
+        connectionError: "We cannot connect to the service right now. Please try again shortly.",
 
         // Components labels
         visualInsights: "Visual Insights",

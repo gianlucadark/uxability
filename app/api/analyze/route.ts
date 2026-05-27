@@ -8,6 +8,75 @@ export const maxDuration = 60;
 
 const PAGESPEED_TIMEOUT_MS = 55_000;
 
+type AnalyzeErrorCode =
+    | "invalid_url"
+    | "timeout"
+    | "network"
+    | "quota"
+    | "blocked"
+    | "unavailable"
+    | "no_result"
+    | "generic";
+
+class PublicAnalyzeError extends Error {
+    code: AnalyzeErrorCode;
+    status: number;
+    cause?: unknown;
+
+    constructor(code: AnalyzeErrorCode, message: string, status = 500, cause?: unknown) {
+        super(message);
+        this.name = "PublicAnalyzeError";
+        this.code = code;
+        this.status = status;
+        this.cause = cause;
+    }
+}
+
+function publicAnalyzeMessage(code: AnalyzeErrorCode, lang: string = "it") {
+    const messages = {
+        it: {
+            invalid_url: "Inserisci un URL valido e completo, ad esempio https://example.com.",
+            timeout: "L'analisi sta impiegando troppo tempo. La pagina potrebbe essere molto pesante: riprova tra poco o analizza una pagina più leggera.",
+            network: "Non siamo riusciti a raggiungere la pagina. Controlla che il sito sia online e riprova.",
+            quota: "Il servizio di analisi è temporaneamente molto richiesto. Riprova tra qualche minuto.",
+            blocked: "Questa pagina non può essere analizzata in questo momento. Potrebbe bloccare gli strumenti automatici o richiedere accesso.",
+            unavailable: "Il servizio di analisi non è disponibile al momento. Riprova tra qualche minuto.",
+            no_result: "L'analisi non ha restituito dati utilizzabili per questa pagina. Prova con un altro URL o riprova più tardi.",
+            generic: "Non siamo riusciti a completare l'analisi. Riprova tra poco.",
+        },
+        en: {
+            invalid_url: "Enter a valid full URL, for example https://example.com.",
+            timeout: "The analysis is taking too long. The page may be very heavy: try again shortly or analyze a lighter page.",
+            network: "We could not reach the page. Check that the site is online and try again.",
+            quota: "The analysis service is temporarily busy. Please try again in a few minutes.",
+            blocked: "This page cannot be analyzed right now. It may block automated tools or require access.",
+            unavailable: "The analysis service is unavailable right now. Please try again in a few minutes.",
+            no_result: "The analysis did not return usable data for this page. Try another URL or come back later.",
+            generic: "We could not complete the analysis. Please try again shortly.",
+        },
+    };
+
+    return messages[lang === "en" ? "en" : "it"][code];
+}
+
+function createPublicAnalyzeError(code: AnalyzeErrorCode, lang: string, status = 500, cause?: unknown) {
+    return new PublicAnalyzeError(code, publicAnalyzeMessage(code, lang), status, cause);
+}
+
+function errorName(error: unknown) {
+    return error instanceof Error ? error.name : "";
+}
+
+function pageSpeedErrorCode(status: number, detail: string): AnalyzeErrorCode {
+    const lowerDetail = detail.toLowerCase();
+
+    if (status === 429 || lowerDetail.includes("quota")) return "quota";
+    if (status === 400 || lowerDetail.includes("invalid") || lowerDetail.includes("not a valid")) return "invalid_url";
+    if (status === 401 || status === 403 || lowerDetail.includes("forbidden") || lowerDetail.includes("blocked")) return "blocked";
+    if (status >= 500) return "unavailable";
+    return "generic";
+}
+
 function normalizeUrl(urlStr: string) {
     try {
         const url = new URL(urlStr);
@@ -109,11 +178,12 @@ async function analyzeUrl(
     let response: Response;
     try {
         response = await fetch(apiUrl, { signal: AbortSignal.timeout(PAGESPEED_TIMEOUT_MS) });
-    } catch (err: any) {
-        if (err?.name === "TimeoutError" || err?.name === "AbortError") {
-            throw new Error(`PageSpeed timeout (>${PAGESPEED_TIMEOUT_MS / 1000}s) for ${url}. The page is too heavy or PageSpeed is overloaded.`);
+    } catch (err: unknown) {
+        const name = errorName(err);
+        if (name === "TimeoutError" || name === "AbortError") {
+            throw createPublicAnalyzeError("timeout", lang, 504, err);
         }
-        throw new Error(`PageSpeed network error for ${url}: ${err?.message || "unknown"}`);
+        throw createPublicAnalyzeError("network", lang, 502, err);
     }
 
     if (!response.ok) {
@@ -125,17 +195,26 @@ async function analyzeUrl(
         } catch {
             try { detail = (await response.text()).slice(0, 240); } catch { /* ignore */ }
         }
-        throw new Error(`PageSpeed ${response.status} for ${url}: ${detail || "no detail"}`);
+        console.error("PageSpeed API error:", {
+            url,
+            status: response.status,
+            detail: detail || "no detail",
+        });
+        const code = pageSpeedErrorCode(response.status, detail);
+        throw createPublicAnalyzeError(code, lang, code === "invalid_url" ? 400 : 502);
     }
 
     const data = await response.json();
 
     if (data.error) {
-        throw new Error(data.error.message || "Failed to analyze " + url);
+        const detail = data.error.message || "Unknown PageSpeed error";
+        console.error("PageSpeed payload error:", { url, detail });
+        throw createPublicAnalyzeError(pageSpeedErrorCode(data.error.code || 500, detail), lang, 502);
     }
 
     if (!data.lighthouseResult) {
-        throw new Error(`PageSpeed returned no lighthouseResult for ${url}`);
+        console.error("PageSpeed returned no lighthouseResult:", { url });
+        throw createPublicAnalyzeError("no_result", lang, 502);
     }
 
     const lighthouse = data.lighthouseResult;
@@ -378,11 +457,26 @@ async function analyzeUrl(
 }
 
 export async function POST(req: Request) {
+    let responseLang = "it";
+
     try {
         const { url, lang, fast = false, maxPages } = await req.json();
+        responseLang = lang === "en" ? "en" : "it";
 
         if (!url) {
-            return NextResponse.json({ error: "URL is required" }, { status: 400 });
+            return NextResponse.json(
+                { error: publicAnalyzeMessage("invalid_url", responseLang), code: "invalid_url" },
+                { status: 400 },
+            );
+        }
+
+        try {
+            new URL(url);
+        } catch {
+            return NextResponse.json(
+                { error: publicAnalyzeMessage("invalid_url", responseLang), code: "invalid_url" },
+                { status: 400 },
+            );
         }
 
         const apiKey = process.env.PAGESPEED_API_KEY;
@@ -394,7 +488,7 @@ export async function POST(req: Request) {
         const analyzeOptions = { metadataFallback: true };
 
         // 1. Analyze main URL first
-        const mainResult = await analyzeUrl(url, apiKey, lang, analyzeOptions);
+        const mainResult = await analyzeUrl(url, apiKey, responseLang, analyzeOptions);
         const allResults = [mainResult];
         const analyzedUrls = new Set<string>([normalizeUrl(mainResult.url)]);
 
@@ -413,7 +507,7 @@ export async function POST(req: Request) {
             if (analyzedUrls.has(normLink)) continue;
 
             try {
-                const result = await analyzeUrl(link, apiKey, lang, analyzeOptions);
+                const result = await analyzeUrl(link, apiKey, responseLang, analyzeOptions);
                 const normFinalUrl = normalizeUrl(result.url);
 
                 if (!analyzedUrls.has(normFinalUrl)) {
@@ -426,8 +520,18 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json({ results: allResults });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Analysis error:", error);
-        return NextResponse.json({ error: error.message || "Failed to analyze URL" }, { status: 500 });
+        if (error instanceof PublicAnalyzeError) {
+            return NextResponse.json(
+                { error: error.message, code: error.code },
+                { status: error.status },
+            );
+        }
+
+        return NextResponse.json(
+            { error: publicAnalyzeMessage("generic", responseLang), code: "generic" },
+            { status: 500 },
+        );
     }
 }

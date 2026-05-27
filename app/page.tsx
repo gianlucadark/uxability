@@ -1,14 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Loader2, ArrowRight, CheckCircle2, Globe, FileText, Zap, Bot, Radar, Network } from "lucide-react";
+import { Search, Loader2, ArrowRight, CheckCircle2, Globe, FileText, Zap, Bot, Radar, Network, Sparkles, ShieldCheck, Gauge, Leaf, Target, TrendingUp, AlertTriangle, ChevronRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CreativeBackdrop from "@/components/CreativeBackdrop";
 import type { BotPolicyResult } from "@/components/AIBotPolicy";
 import { useLanguage } from "@/context/LanguageContext";
+import { buildFixSuggestions, type FixSuggestion } from "@/lib/fixSuggestions";
 
 const ScoreCircle = dynamic(() => import("@/components/ScoreCircle"));
 const OpportunityCard = dynamic(() => import("@/components/OpportunityCard"));
@@ -99,6 +100,98 @@ function shouldCacheResult(value: unknown): boolean {
   );
 }
 
+function getFriendlyAnalysisError(error: unknown, fallback: string, language: string): string {
+  const technicalPattern = /pagespeed|lighthouse|timeout|abort|network|failed to fetch|fetch failed|status\s?\d{3}|api|json|server/i;
+  const message = error instanceof Error ? error.message : "";
+
+  if (!message || technicalPattern.test(message)) {
+    return fallback;
+  }
+
+  if (language === "it" && /^error during analysis/i.test(message)) {
+    return fallback;
+  }
+
+  return message;
+}
+
+type DashboardTab = "overview" | "performance" | "ai" | "privacy";
+
+interface VerdictInfo {
+  level: "excellent" | "good" | "warning" | "critical";
+  label: string;
+  desc: string;
+  color: string;
+  bg: string;
+  border: string;
+  icon: typeof Sparkles;
+}
+
+function getVerdict(overall: number, language: string): VerdictInfo {
+  if (overall >= 85) {
+    return {
+      level: "excellent",
+      label: language === "it" ? "Eccellente" : "Excellent",
+      desc: language === "it"
+        ? "Il sito è solido su tutti i fronti. Mantieni il livello con monitoraggio continuo."
+        : "The site is strong across the board. Keep this level with continuous monitoring.",
+      color: "#0f8f68",
+      bg: "rgba(15,143,104,0.08)",
+      border: "rgba(15,143,104,0.25)",
+      icon: Sparkles,
+    };
+  }
+  if (overall >= 65) {
+    return {
+      level: "good",
+      label: language === "it" ? "Buono" : "Good",
+      desc: language === "it"
+        ? "Buona base con margini di crescita. Concentra gli sforzi sulle 3 azioni prioritarie qui sotto."
+        : "Solid baseline with room to grow. Focus on the 3 priority actions below.",
+      color: "#3f6f8f",
+      bg: "rgba(63,111,143,0.08)",
+      border: "rgba(63,111,143,0.25)",
+      icon: TrendingUp,
+    };
+  }
+  if (overall >= 45) {
+    return {
+      level: "warning",
+      label: language === "it" ? "Da migliorare" : "Needs work",
+      desc: language === "it"
+        ? "Diverse aree richiedono attenzione. Le azioni in alto riducono subito l'impatto sugli utenti."
+        : "Several areas need attention. The actions above will quickly reduce user impact.",
+      color: "#b7791f",
+      bg: "rgba(183,121,31,0.10)",
+      border: "rgba(183,121,31,0.30)",
+      icon: AlertTriangle,
+    };
+  }
+  return {
+    level: "critical",
+    label: language === "it" ? "Critico" : "Critical",
+    desc: language === "it"
+      ? "Problemi rilevanti su più dimensioni. Affronta subito le azioni prioritarie per fermare la perdita."
+      : "Significant problems across multiple dimensions. Address priority actions now to stop the bleeding.",
+    color: "#bd3150",
+    bg: "rgba(189,49,80,0.10)",
+    border: "rgba(189,49,80,0.30)",
+    icon: AlertTriangle,
+  };
+}
+
+function scoreColor(score: number): string {
+  if (score >= 90) return "#0f8f68";
+  if (score >= 50) return "#b7791f";
+  return "#bd3150";
+}
+
+function aeoScoreColor(score: number): string {
+  if (score >= 70) return "#0f8f68";
+  if (score >= 40) return "#b7791f";
+  return "#bd3150";
+}
+
 function LLMsTxtSkeleton() {
   return (
     <div className="card p-4 md:p-5 animate-pulse" aria-label="Loading llms.txt generator">
@@ -133,6 +226,7 @@ export default function Home() {
   const [botPolicyResult, setBotPolicyResult] = useState<BotPolicyResult | null>(null);
   const [crawlInternalPages, setCrawlInternalPages] = useState(false);
   const [maxExtraUrls, setMaxExtraUrls] = useState(3);
+  const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
   const analysisRunRef = useRef(0);
   const { language, t } = useLanguage();
 
@@ -262,13 +356,41 @@ export default function Home() {
       });
     } catch (err) {
       if (runId === analysisRunRef.current) {
-        setError(err instanceof Error ? err.message : t('connectionError'));
+        setError(getFriendlyAnalysisError(err, t("analysisError"), language));
       }
       setLoading(false);
     }
   };
 
   const currentResult = results ? results[activeResultIndex] : null;
+
+  const topFixes = useMemo<FixSuggestion[]>(() => {
+    if (!currentResult) return [];
+    try {
+      const all = buildFixSuggestions({
+        result: currentResult as any,
+        aeoResult: aeoResult as any,
+        privacyResult: privacyResult as any,
+        language: language === "it" ? "it" : "en",
+      });
+      return all.slice(0, 3);
+    } catch {
+      return [];
+    }
+  }, [currentResult, aeoResult, privacyResult, language]);
+
+  const overallScore = useMemo(() => {
+    if (!currentResult) return 0;
+    const s = currentResult.scores || {};
+    const perf = s.performance ?? 0;
+    const a11y = s.accessibility ?? 0;
+    const seo = s.seo ?? 0;
+    const aeo = aeoResult?.aeo ?? 0;
+    const privacy = privacyResult?.privacyScore ?? 50;
+    return Math.round(perf * 0.30 + a11y * 0.20 + seo * 0.15 + aeo * 0.20 + privacy * 0.15);
+  }, [currentResult, aeoResult, privacyResult]);
+
+  const verdict = useMemo(() => getVerdict(overallScore, language), [overallScore, language]);
 
   const exportToPDF = async () => {
     if (!results) return;
@@ -1224,7 +1346,7 @@ export default function Home() {
 
               {/* Page Selector Tabs */}
               {results.length > 1 && (
-                <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-12">
+                <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 -mt-6">
                   {results.map((res, i) => (
                     <button
                       type="button"
@@ -1253,128 +1375,276 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Grid of Scores */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <ScoreCircle
-                  score={currentResult.scores.performance}
-                  label={t('performance')}
-                  delay={0.2}
-                  onClick={() => setSelectedCategory("performance")}
+              {/* ===== Hero Scorecard: verdict + 5 mini scores + top 3 actions ===== */}
+              <div
+                className="relative overflow-hidden rounded-2xl border bg-white/60 backdrop-blur-sm p-6 md:p-8"
+                style={{ borderColor: verdict.border }}
+              >
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: `linear-gradient(135deg, ${verdict.bg} 0%, transparent 60%)` }}
                 />
-                <ScoreCircle
-                  score={currentResult.scores.accessibility}
-                  label={t('accessibility')}
-                  delay={0.3}
-                  onClick={() => setSelectedCategory("accessibility")}
-                />
-                <ScoreCircle
-                  score={currentResult.scores.bestPractices}
-                  label={t('bestPractices')}
-                  delay={0.4}
-                  onClick={() => setSelectedCategory("bestPractices")}
-                />
-                <ScoreCircle
-                  score={currentResult.scores.seo}
-                  label={t('seo')}
-                  delay={0.5}
-                  onClick={() => setSelectedCategory("seo")}
-                />
+                <div className="relative grid gap-6 md:grid-cols-[auto_1fr] md:gap-8 items-center">
+                  {/* Verdict block */}
+                  <div className="flex md:flex-col items-center md:items-start gap-4 md:gap-3 md:border-r md:pr-8" style={{ borderColor: verdict.border }}>
+                    <div
+                      className="flex items-center justify-center rounded-full h-16 w-16 md:h-20 md:w-20 shrink-0"
+                      style={{ backgroundColor: verdict.bg, color: verdict.color, border: `2px solid ${verdict.border}` }}
+                    >
+                      <verdict.icon size={28} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="section-label text-stone-500 mb-1">
+                        {language === "it" ? "Verdetto" : "Verdict"}
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl md:text-4xl font-black tabular-nums" style={{ color: verdict.color }}>
+                          {overallScore}
+                        </span>
+                        <span className="text-sm font-medium text-stone-500">/100</span>
+                      </div>
+                      <div className="text-lg md:text-xl font-bold mt-0.5" style={{ color: verdict.color }}>
+                        {verdict.label}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mini scores row */}
+                  <div>
+                    <p className="text-sm text-stone-600 mb-4 leading-relaxed max-w-2xl">
+                      {verdict.desc}
+                    </p>
+                    <div className="grid grid-cols-5 gap-2 md:gap-3">
+                      {[
+                        { key: "perf", label: t('performance'), value: currentResult.scores.performance, onClick: () => setSelectedCategory("performance"), isAeo: false },
+                        { key: "a11y", label: t('accessibility'), value: currentResult.scores.accessibility, onClick: () => setSelectedCategory("accessibility"), isAeo: false },
+                        { key: "seo", label: t('seo'), value: currentResult.scores.seo, onClick: () => setSelectedCategory("seo"), isAeo: false },
+                        { key: "aeo", label: "AEO", value: aeoResult?.aeo ?? null, onClick: () => setActiveTab("ai"), isAeo: true },
+                        { key: "priv", label: language === "it" ? "Privacy" : "Privacy", value: privacyResult?.privacyScore ?? null, onClick: () => setActiveTab("privacy"), isAeo: false },
+                      ].map((m) => {
+                        const isPending = m.value === null;
+                        const color = isPending ? "#9ca3af" : (m.isAeo ? aeoScoreColor(m.value as number) : scoreColor(m.value as number));
+                        return (
+                          <button
+                            key={m.key}
+                            type="button"
+                            onClick={m.onClick}
+                            className="group flex flex-col items-center justify-center gap-1 rounded-xl border border-stone-200 bg-white/70 px-2 py-3 hover:border-stone-400 hover:-translate-y-0.5 transition-all"
+                          >
+                            <span className="text-xl md:text-2xl font-black tabular-nums" style={{ color }}>
+                              {isPending ? "—" : m.value}
+                            </span>
+                            <span className="section-label text-stone-500 group-hover:text-stone-700 text-[9px] md:text-[10px] truncate max-w-full">
+                              {m.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top 3 actions */}
+                {topFixes.length > 0 && (
+                  <div className="relative mt-7 pt-6 border-t border-stone-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Target size={14} className="text-stone-600" />
+                      <span className="section-label text-stone-600">
+                        {language === "it" ? "Le 3 azioni prioritarie" : "Top 3 priority actions"}
+                      </span>
+                    </div>
+                    <div className="grid gap-2 md:grid-cols-3">
+                      {topFixes.map((fix, i) => (
+                        <button
+                          key={fix.id}
+                          type="button"
+                          onClick={() => {
+                            // Route to relevant tab by category
+                            if (fix.category === "aeo") setActiveTab("ai");
+                            else if (fix.category === "privacy" || fix.category === "carbon") setActiveTab("privacy");
+                            else setActiveTab("performance");
+                          }}
+                          className="group flex items-start gap-3 rounded-xl border border-stone-200 bg-white/70 p-3 text-left hover:border-stone-400 hover:bg-white transition-all"
+                        >
+                          <span
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-black"
+                            style={{
+                              backgroundColor: fix.priority === "critical" ? "#bd3150" : fix.priority === "high" ? "#b7791f" : "#3f6f8f",
+                              color: "white",
+                            }}
+                          >
+                            {i + 1}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-semibold text-stone-900 leading-snug line-clamp-2">
+                              {fix.title}
+                            </div>
+                            <div className="mt-1 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-stone-500">
+                              <span>{fix.category}</span>
+                              <span>·</span>
+                              <span>{fix.priority}</span>
+                              <ChevronRight size={11} className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
+              {/* ===== Shareable Scorecard (in cima, virale) ===== */}
               <ShareScoreCard
                 scores={currentResult.scores}
                 aeoScore={aeoResult?.aeo ?? 0}
                 analyzedUrl={currentResult.url}
               />
 
-              {/* 0. Strategic AI Advice */}
-              <AIRecommendation
-                score={currentResult.scores.performance}
-                opportunities={currentResult.opportunities}
-              />
-
-              {/* AEO Score */}
-              <AEOScore result={aeoResult} />
-
-              {/* llms.txt Generator */}
-              {aeoResult && (
-                <LLMsTxtGenerator
-                  results={results}
-                  llmsTxtScore={aeoResult.signals?.llmsTxt ?? 0}
-                />
-              )}
-              {!aeoResult && <LLMsTxtSkeleton />}
-
-              {/* AI Bot Policy (robots.txt) */}
-              <AIBotPolicy result={botPolicyResult} />
-
-              {/* Carbon Footprint */}
-              <CarbonScore resourceSummary={currentResult.resourceSummary} />
-
-              {/* Privacy & Tracker Score */}
-              <PrivacyScore result={privacyResult} />
-
-              {/* Actionable Fix Plan */}
-              <FixPlan
-                result={currentResult}
-                aeoResult={aeoResult}
-                privacyResult={privacyResult}
-              />
-              
-              {/* 1. Core Visuals & Real World Experience */}
-              <div className="space-y-16">
-                {/* 
-                <VisualInsights 
-                  screenshot={currentResult.screenshot} 
-                  thumbnails={currentResult.thumbnails} 
-                /> 
-                */}
-
-                <FieldDataBadges fieldData={currentResult.fieldData} />
-
-                {/* New Feature: User Frustration Index */}
-                <FrustrationIndex
-                  cls={currentResult.keyMetrics.cls_v || 0}
-                  tbt={currentResult.keyMetrics.tbt_v || 0}
-                />
-              </div>
-
-              {/* 2. Technical Lab Simulation */}
-              <LabMetrics metrics={currentResult.keyMetrics} />
-
-              {/* 3. Deep Analysis: Main Thread & Resources */}
-              <div className="space-y-12 pt-12 border-t border-stone-200">
-                <ResourceBreakdown resources={currentResult.resourceSummary} />
-                <MainThreadBreakdown items={currentResult.mainThreadWork} />
-              </div>
-
-              {/* New Feature: Social Share Preview */}
-              <SocialPreview
-                metadata={currentResult.seoMetadata}
-                url={currentResult.url}
-              />
-
-              {/* 4. Priorities & Opportunities */}
-              <div className="space-y-8">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-stone-100 border border-stone-200 text-stone-600">
-                    <Zap className="w-5 h-5 md:w-6 md:h-6" />
-                  </div>
-                  <h3 className="text-xl md:text-2xl font-bold text-stone-800">{t('criticalities')}</h3>
+              {/* ===== Tab navigation (Apple-style: pill centered) ===== */}
+              <div className="sticky top-20 z-20 flex justify-center">
+                <div className="inline-flex items-center gap-1 max-w-full overflow-x-auto rounded-full border border-stone-200 bg-white/85 backdrop-blur-md p-1 shadow-sm">
+                  {([
+                    { key: "overview", label: language === "it" ? "Panoramica" : "Overview", icon: Sparkles },
+                    { key: "performance", label: language === "it" ? "Performance" : "Performance", icon: Gauge },
+                    { key: "ai", label: language === "it" ? "AI & Contenuto" : "AI & Content", icon: Bot },
+                    { key: "privacy", label: language === "it" ? "Privacy & Impatto" : "Privacy & Impact", icon: ShieldCheck },
+                  ] as { key: DashboardTab; label: string; icon: typeof Sparkles }[]).map((tab) => {
+                    const active = activeTab === tab.key;
+                    const Icon = tab.icon;
+                    return (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setActiveTab(tab.key)}
+                        aria-current={active ? "page" : undefined}
+                        className={`flex items-center gap-2 whitespace-nowrap rounded-full px-4 md:px-5 py-2 text-xs md:text-sm font-semibold transition-all ${active
+                          ? "bg-stone-900 text-white shadow-sm"
+                          : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
+                          }`}
+                      >
+                        <Icon size={14} />
+                        <span>{tab.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
+              </div>
 
-                <div className="grid grid-cols-1 gap-2">
-                  {currentResult.opportunities.length > 0 ? (
-                    currentResult.opportunities.map((opp: any, i: number) => (
-                      <OpportunityCard key={`opp-${i}-${opp.title.substring(0, 10)}`} opportunity={opp} index={i} />
-                    ))
-                  ) : (
-                    <div className="card p-12 text-center text-stone-600 italic">
-                      {t('noCriticalities')}
-                    </div>
+              {/* ===== Tab content ===== */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.22 }}
+                  className="space-y-12"
+                >
+                  {activeTab === "overview" && (
+                    <>
+                      <AIRecommendation
+                        score={currentResult.scores.performance}
+                        opportunities={currentResult.opportunities}
+                      />
+                      <FixPlan
+                        result={currentResult}
+                        aeoResult={aeoResult}
+                        privacyResult={privacyResult}
+                      />
+                    </>
                   )}
-                </div>
-              </div>
+
+                  {activeTab === "performance" && (
+                    <>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                        <ScoreCircle
+                          score={currentResult.scores.performance}
+                          label={t('performance')}
+                          delay={0.05}
+                          onClick={() => setSelectedCategory("performance")}
+                        />
+                        <ScoreCircle
+                          score={currentResult.scores.accessibility}
+                          label={t('accessibility')}
+                          delay={0.1}
+                          onClick={() => setSelectedCategory("accessibility")}
+                        />
+                        <ScoreCircle
+                          score={currentResult.scores.bestPractices}
+                          label={t('bestPractices')}
+                          delay={0.15}
+                          onClick={() => setSelectedCategory("bestPractices")}
+                        />
+                        <ScoreCircle
+                          score={currentResult.scores.seo}
+                          label={t('seo')}
+                          delay={0.2}
+                          onClick={() => setSelectedCategory("seo")}
+                        />
+                      </div>
+
+                      <FieldDataBadges fieldData={currentResult.fieldData} />
+                      <FrustrationIndex
+                        cls={currentResult.keyMetrics.cls_v || 0}
+                        tbt={currentResult.keyMetrics.tbt_v || 0}
+                      />
+                      <LabMetrics metrics={currentResult.keyMetrics} />
+
+                      <div className="space-y-12 pt-12 border-t border-stone-200">
+                        <ResourceBreakdown resources={currentResult.resourceSummary} />
+                        <MainThreadBreakdown items={currentResult.mainThreadWork} />
+                      </div>
+
+                      <div className="space-y-8 pt-12 border-t border-stone-200">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-stone-100 border border-stone-200 text-stone-600">
+                            <Zap className="w-5 h-5 md:w-6 md:h-6" />
+                          </div>
+                          <h3 className="text-xl md:text-2xl font-bold text-stone-800">{t('criticalities')}</h3>
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
+                          {currentResult.opportunities.length > 0 ? (
+                            currentResult.opportunities.map((opp: any, i: number) => (
+                              <OpportunityCard key={`opp-${i}-${opp.title.substring(0, 10)}`} opportunity={opp} index={i} />
+                            ))
+                          ) : (
+                            <div className="card p-12 text-center text-stone-600 italic">
+                              {t('noCriticalities')}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {activeTab === "ai" && (
+                    <>
+                      <AEOScore result={aeoResult} />
+                      {aeoResult ? (
+                        <LLMsTxtGenerator
+                          results={results}
+                          llmsTxtScore={aeoResult.signals?.llmsTxt ?? 0}
+                        />
+                      ) : (
+                        <LLMsTxtSkeleton />
+                      )}
+                      <SocialPreview
+                        metadata={currentResult.seoMetadata}
+                        url={currentResult.url}
+                      />
+                    </>
+                  )}
+
+                  {activeTab === "privacy" && (
+                    <>
+                      <AIBotPolicy result={botPolicyResult} />
+                      <PrivacyScore result={privacyResult} />
+                      <CarbonScore resourceSummary={currentResult.resourceSummary} />
+                    </>
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </motion.section>
           )}
         </AnimatePresence>

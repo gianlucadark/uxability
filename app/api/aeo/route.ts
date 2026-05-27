@@ -1,6 +1,56 @@
 import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
 
+const AI_SCAN_LIMIT_PER_IP = 3;
+const AI_SCAN_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+type IpAIScanBucket = {
+    count: number;
+    resetAt: number;
+};
+
+const ipAIScanBuckets = new Map<string, IpAIScanBucket>();
+
+function getClientIp(req: Request) {
+    const forwardedFor = req.headers.get("x-forwarded-for");
+    const firstForwardedIp = forwardedFor?.split(",")[0]?.trim();
+
+    return (
+        firstForwardedIp ||
+        req.headers.get("x-real-ip") ||
+        req.headers.get("cf-connecting-ip") ||
+        req.headers.get("true-client-ip") ||
+        "unknown"
+    );
+}
+
+function consumeAIScan(ip: string) {
+    const now = Date.now();
+    const current = ipAIScanBuckets.get(ip);
+
+    if (!current || current.resetAt <= now) {
+        const resetAt = now + AI_SCAN_LIMIT_WINDOW_MS;
+        ipAIScanBuckets.set(ip, { count: 1, resetAt });
+        return { aiAllowed: true, remaining: AI_SCAN_LIMIT_PER_IP - 1, resetAt };
+    }
+
+    if (current.count >= AI_SCAN_LIMIT_PER_IP) {
+        return { aiAllowed: false, remaining: 0, resetAt: current.resetAt };
+    }
+
+    current.count += 1;
+    return { aiAllowed: true, remaining: AI_SCAN_LIMIT_PER_IP - current.count, resetAt: current.resetAt };
+}
+
+function getAIRateLimitHeaders(remaining: number, resetAt: number, aiAllowed: boolean) {
+    return {
+        "X-AI-RateLimit-Limit": String(AI_SCAN_LIMIT_PER_IP),
+        "X-AI-RateLimit-Remaining": String(remaining),
+        "X-AI-RateLimit-Reset": new Date(resetAt).toISOString(),
+        "X-AI-Enhanced": String(aiAllowed),
+    };
+}
+
 function clamp(v: number): number {
     return Math.min(100, Math.max(0, Math.round(v)));
 }
@@ -365,7 +415,8 @@ async function enhanceAEOWithGemini(
     }
 }
 
-async function computeAEO(url: string): Promise<AEOResult> {
+async function computeAEO(url: string, options: { enhanceWithAI?: boolean } = {}): Promise<AEOResult> {
+    const { enhanceWithAI = true } = options;
     const origin = new URL(url).origin;
 
     const zeroResult = (error: string): AEOResult => ({
@@ -602,6 +653,10 @@ async function computeAEO(url: string): Promise<AEOResult> {
         aiEnhanced: false,
     };
 
+    if (!enhanceWithAI) {
+        return { ...baseResult, aiFallbackReason: "blocked" };
+    }
+
     return enhanceAEOWithGemini(
         baseResult,
         buildGeminiContext($, url, origin, signals, jsonLdTypes),
@@ -613,8 +668,13 @@ export async function POST(req: Request) {
         const { url } = await req.json();
         if (!url) return NextResponse.json({ error: "URL required" }, { status: 400 });
 
-        const result = await computeAEO(url);
-        return NextResponse.json(result);
+        const aiRateLimit = consumeAIScan(getClientIp(req));
+        const result = await computeAEO(url, { enhanceWithAI: aiRateLimit.aiAllowed });
+
+        return NextResponse.json(
+            result,
+            { headers: getAIRateLimitHeaders(aiRateLimit.remaining, aiRateLimit.resetAt, aiRateLimit.aiAllowed) },
+        );
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "AEO analysis failed";
         console.error("AEO analysis error:", error);
