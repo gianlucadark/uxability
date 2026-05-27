@@ -1,8 +1,39 @@
 import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
+import { assertPublicHttpUrl, getClientIp, isPublicUrlError } from "@/lib/server/publicApi";
 
 const AI_SCAN_LIMIT_PER_IP = 3;
 const AI_SCAN_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+// In-memory shared cache to dedupe identical AEO requests across IPs.
+// TTL matches the client-side cache so callers see a consistent freshness window
+// without burning Gemini quota when many users analyze the same popular URL.
+const AEO_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const AEO_CACHE_MAX_ENTRIES = 500;
+
+type CachedAEO = { result: AEOResult; expiresAt: number };
+const aeoCache = new Map<string, CachedAEO>();
+
+function getCachedAeo(key: string): AEOResult | null {
+    const entry = aeoCache.get(key);
+    if (!entry) return null;
+    if (entry.expiresAt <= Date.now()) {
+        aeoCache.delete(key);
+        return null;
+    }
+    return entry.result;
+}
+
+function setCachedAeo(key: string, result: AEOResult) {
+    // Only cache successful, AI-enhanced runs — fallbacks shouldn't be served
+    // to the next caller who might be eligible for a real AI evaluation.
+    if (result.error || !result.aiEnhanced) return;
+    if (aeoCache.size >= AEO_CACHE_MAX_ENTRIES) {
+        const oldestKey = aeoCache.keys().next().value;
+        if (oldestKey) aeoCache.delete(oldestKey);
+    }
+    aeoCache.set(key, { result, expiresAt: Date.now() + AEO_CACHE_TTL_MS });
+}
 
 type IpAIScanBucket = {
     count: number;
@@ -10,19 +41,6 @@ type IpAIScanBucket = {
 };
 
 const ipAIScanBuckets = new Map<string, IpAIScanBucket>();
-
-function getClientIp(req: Request) {
-    const forwardedFor = req.headers.get("x-forwarded-for");
-    const firstForwardedIp = forwardedFor?.split(",")[0]?.trim();
-
-    return (
-        firstForwardedIp ||
-        req.headers.get("x-real-ip") ||
-        req.headers.get("cf-connecting-ip") ||
-        req.headers.get("true-client-ip") ||
-        "unknown"
-    );
-}
 
 function consumeAIScan(ip: string) {
     const now = Date.now();
@@ -667,15 +685,37 @@ export async function POST(req: Request) {
     try {
         const { url } = await req.json();
         if (!url) return NextResponse.json({ error: "URL required" }, { status: 400 });
+        const safeUrl = await assertPublicHttpUrl(url);
+
+        // Serve from shared cache when available — same TTL as the client-side cache
+        // so quota-eligible IPs still get a fresh AI run after expiry.
+        const cached = getCachedAeo(safeUrl);
+        if (cached) {
+            return NextResponse.json(cached, {
+                headers: {
+                    "X-AEO-Cache": "hit",
+                    "X-AI-Enhanced": String(Boolean(cached.aiEnhanced)),
+                },
+            });
+        }
 
         const aiRateLimit = consumeAIScan(getClientIp(req));
-        const result = await computeAEO(url, { enhanceWithAI: aiRateLimit.aiAllowed });
+        const result = await computeAEO(safeUrl, { enhanceWithAI: aiRateLimit.aiAllowed });
+        setCachedAeo(safeUrl, result);
 
         return NextResponse.json(
             result,
-            { headers: getAIRateLimitHeaders(aiRateLimit.remaining, aiRateLimit.resetAt, aiRateLimit.aiAllowed) },
+            {
+                headers: {
+                    ...getAIRateLimitHeaders(aiRateLimit.remaining, aiRateLimit.resetAt, aiRateLimit.aiAllowed),
+                    "X-AEO-Cache": "miss",
+                },
+            },
         );
     } catch (error: unknown) {
+        if (isPublicUrlError(error)) {
+            return NextResponse.json({ error: "URL must be public http(s)", code: "invalid_url" }, { status: 400 });
+        }
         const message = error instanceof Error ? error.message : "AEO analysis failed";
         console.error("AEO analysis error:", error);
         return NextResponse.json({ error: message }, { status: 500 });

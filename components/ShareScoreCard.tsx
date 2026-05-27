@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download, Linkedin, Share2, Sparkles, Twitter } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import { SITE_URL } from "@/lib/site";
 
 type Scores = {
     performance: number;
@@ -19,7 +20,7 @@ type ShareScoreCardProps = {
 
 const W = 1200;
 const H = 630;
-const SHARE_URL = "https://uxability.vercel.app";
+const SHARE_URL = SITE_URL;
 
 function clamp(n: number) {
     return Math.max(0, Math.min(100, Math.round(n || 0)));
@@ -76,8 +77,8 @@ export default function ShareScoreCard({ scores, aeoScore, analyzedUrl }: ShareS
     const globalScore = Math.round((s.performance + s.accessibility + s.bestPractices + s.seo + aeo) / 5);
 
     const shareText = language === "it"
-        ? `Ho analizzato ${hostname} su UXAbility: score globale ${globalScore}/100, performance, SEO e AI readiness. Analizza il tuo su uxability.vercel.app`
-        : `I audited ${hostname} on UXAbility: global score ${globalScore}/100, performance, SEO and AI readiness. Analyze yours on uxability.vercel.app`;
+        ? `Ho analizzato ${hostname} su UXAbility: score globale ${globalScore}/100, performance, SEO e AI readiness. Analizza il tuo su ${new URL(SHARE_URL).hostname}`
+        : `I audited ${hostname} on UXAbility: global score ${globalScore}/100, performance, SEO and AI readiness. Analyze yours on ${new URL(SHARE_URL).hostname}`;
 
     useEffect(() => () => {
         if (imageUrl) URL.revokeObjectURL(imageUrl);
@@ -205,7 +206,7 @@ export default function ShareScoreCard({ scores, aeoScore, analyzedUrl }: ShareS
         ctx.fill();
         ctx.fillStyle = "rgba(255,250,241,0.68)";
         ctx.font = "700 14px Arial, sans-serif";
-        ctx.fillText("uxability.vercel.app", 928, 342);
+        ctx.fillText(new URL(SHARE_URL).hostname, 928, 342);
 
         const metrics = [
             { label: "PERF", value: s.performance },

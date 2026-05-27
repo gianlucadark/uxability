@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,7 +23,7 @@ const socialPreviewImage = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://uxability.vercel.app"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "UXAbility | Audit SEO, Performance, AEO e Privacy",
     template: "%s | UXAbility",
@@ -81,16 +83,21 @@ export const viewport: Viewport = {
   colorScheme: "light",
 };
 
+// dateModified is wired to the build time so structured data stays fresh
+// without a manual bump on every release. datePublished stays as the project's
+// public launch anchor.
+const BUILD_DATE = (process.env.NEXT_PUBLIC_BUILD_DATE || new Date().toISOString()).slice(0, 10);
+
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
   name: "UXAbility",
-  url: "https://uxability.vercel.app",
+  url: SITE_URL,
   applicationCategory: "DeveloperApplication",
   operatingSystem: "Web",
   description: "Audit tool per performance, accessibilita, SEO, AEO, privacy e policy dei bot AI.",
   datePublished: "2024-01-01",
-  dateModified: "2026-05-26",
+  dateModified: BUILD_DATE,
   creator: {
     "@type": "Person",
     name: "Gianluca D'Arcangelo",
@@ -167,16 +174,21 @@ const faqStructuredData = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const langCookie = cookieStore.get("lang")?.value;
+  const lang = langCookie === "en" ? "en" : "it";
+  const skipLabel = lang === "en" ? "Skip to main content" : "Salta al contenuto principale";
+
   return (
-    <html lang="it">
+    <html lang={lang}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <a href="#main-content" className="skip-link">
-          Salta al contenuto principale
+          {skipLabel}
         </a>
         <script
           type="application/ld+json"

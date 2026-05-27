@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { applyRateLimit, assertPublicHttpUrl, isPublicUrlError, rateLimitResponse } from "@/lib/server/publicApi";
+
+const BOTS_RATE_LIMIT = { limit: 80, windowMs: 24 * 60 * 60 * 1000 };
 
 export type BotPurpose = "training" | "search" | "answers" | "crawler";
 export type BotStatus = "allow" | "block" | "partial" | "not_specified";
@@ -264,12 +267,19 @@ async function computeBotPolicy(targetUrl: string): Promise<BotPolicyResult> {
 
 export async function POST(req: Request) {
     try {
+        const rateLimit = applyRateLimit(req, "bots", BOTS_RATE_LIMIT);
+        if (!rateLimit.allowed) return rateLimitResponse();
+
         const { url } = await req.json();
         if (!url) return NextResponse.json({ error: "URL required" }, { status: 400 });
+        const safeUrl = await assertPublicHttpUrl(url);
 
-        const result = await computeBotPolicy(url);
+        const result = await computeBotPolicy(safeUrl);
         return NextResponse.json(result);
     } catch (error: unknown) {
+        if (isPublicUrlError(error)) {
+            return NextResponse.json({ error: "URL must be public http(s)", code: "invalid_url" }, { status: 400 });
+        }
         const message = error instanceof Error ? error.message : "Bot policy analysis failed";
         console.error("Bot policy error:", error);
         return NextResponse.json({ error: message }, { status: 500 });

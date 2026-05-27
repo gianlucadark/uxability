@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
+import { applyRateLimit, assertPublicHttpUrl, isPublicUrlError, rateLimitResponse } from "@/lib/server/publicApi";
+
+const PRIVACY_RATE_LIMIT = { limit: 80, windowMs: 24 * 60 * 60 * 1000 };
 
 const TRACKER_DB: Record<string, { name: string; category: "advertising" | "analytics" | "functional" | "consent" | "cdn" }> = {
   "doubleclick.net": { name: "Google DoubleClick", category: "advertising" },
@@ -91,10 +94,14 @@ function matchTracker(domain: string): (typeof TRACKER_DB)[string] | null {
 
 export async function POST(req: Request) {
   try {
+    const rateLimit = applyRateLimit(req, "privacy", PRIVACY_RATE_LIMIT);
+    if (!rateLimit.allowed) return rateLimitResponse();
+
     const { url } = await req.json();
     if (!url) return NextResponse.json({ error: "URL required" }, { status: 400 });
+    const safeUrl = await assertPublicHttpUrl(url);
 
-    const pageRes = await fetch(url, {
+    const pageRes = await fetch(safeUrl, {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; UXAbilityBot/1.0)" },
       signal: AbortSignal.timeout(10000),
     });
@@ -105,7 +112,7 @@ export async function POST(req: Request) {
 
     const html = await pageRes.text();
     const $ = cheerio.load(html);
-    const baseDomain = extractDomain(url) || "";
+    const baseDomain = extractDomain(safeUrl) || "";
 
     const externalUrls = new Set<string>();
 
@@ -188,7 +195,10 @@ export async function POST(req: Request) {
       analyticsCount: analyticsTrackers.length,
       functionalCount: functionalTrackers.length,
     });
-  } catch (err: any) {
+  } catch (error) {
+    if (isPublicUrlError(error)) {
+      return NextResponse.json({ error: "URL must be public http(s)", code: "invalid_url", privacyScore: 50, trackers: [], thirdPartyDomains: 0, consentDetected: false, grade: "C" }, { status: 400 });
+    }
     return NextResponse.json({ error: "fetch_failed", privacyScore: 50, trackers: [], thirdPartyDomains: 0, consentDetected: false, grade: "C" });
   }
 }

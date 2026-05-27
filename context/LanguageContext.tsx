@@ -16,21 +16,24 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         const stored = localStorage.getItem('language') as Language;
-        if (stored && (stored === 'it' || stored === 'en')) {
-            setLanguage(stored);
-        } else {
-            const browserLang = navigator.language.split('-')[0];
-            if (browserLang === 'en') {
-                setLanguage('en');
-            } else {
-                setLanguage('it');
-            }
+        const initial: Language = stored === 'it' || stored === 'en'
+            ? stored
+            : navigator.language.split('-')[0] === 'en' ? 'en' : 'it';
+        setLanguage(initial);
+        // Mirror to a cookie so the server-rendered <html lang> matches the user's choice.
+        document.cookie = `lang=${initial}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+        if (typeof document !== 'undefined' && document.documentElement.lang !== initial) {
+            document.documentElement.lang = initial;
         }
     }, []);
 
     const handleSetLanguage = (lang: Language) => {
         setLanguage(lang);
         localStorage.setItem('language', lang);
+        document.cookie = `lang=${lang}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+        if (typeof document !== 'undefined') {
+            document.documentElement.lang = lang;
+        }
     };
 
     const t = (key: string, ...args: any[]): string => {

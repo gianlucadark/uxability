@@ -17,6 +17,8 @@ export const translations = {
         // Results
         homePage: "Home Page",
         exportPdf: "Esporta PDF",
+        copyMarkdown: "Copia come Markdown",
+        copyMarkdownDone: "Markdown copiato!",
         analyzed: "Analizzato",
         pageSelector: "Selettore Pagina",
         globalScores: "Punteggi Globali",
@@ -379,6 +381,8 @@ export const translations = {
         // Results
         homePage: "Home Page",
         exportPdf: "Export PDF",
+        copyMarkdown: "Copy as Markdown",
+        copyMarkdownDone: "Markdown copied!",
         analyzed: "Analyzed",
         pageSelector: "Page Selector",
         globalScores: "Global Scores",

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
+import { applyRateLimit, assertPublicHttpUrl, rateLimitResponse } from "@/lib/server/publicApi";
+import { SITE_URL } from "@/lib/site";
 
 // Heavy pages (Wikipedia, news sites) can keep PageSpeed busy for 30-45s. Default
 // Vercel serverless limit on Hobby is 10s — bump to 60s so the analyze route doesn't
@@ -7,6 +9,7 @@ import * as cheerio from "cheerio";
 export const maxDuration = 60;
 
 const PAGESPEED_TIMEOUT_MS = 55_000;
+const ANALYZE_RATE_LIMIT = { limit: 30, windowMs: 24 * 60 * 60 * 1000 };
 
 type AnalyzeErrorCode =
     | "invalid_url"
@@ -123,7 +126,13 @@ async function recursiveCrawl(startUrl: string, targetCount: number) {
 
     try {
         // First pass: Main URL
-        const response = await fetch(startUrl);
+        const response = await fetch(startUrl, {
+            headers: {
+                "User-Agent": `Mozilla/5.0 (compatible; UXAbility/1.0; +${SITE_URL})`,
+                "Accept": "text/html,application/xhtml+xml",
+            },
+            redirect: "follow",
+        });
         if (!response.ok) return [];
         const html = await response.text();
         const firstLevelLinks = await getLinksFromHtml(html, startUrl);
@@ -141,7 +150,13 @@ async function recursiveCrawl(startUrl: string, targetCount: number) {
 
                 visitedForLinks.add(link);
                 try {
-                    const res = await fetch(link);
+                    const res = await fetch(link, {
+                        headers: {
+                            "User-Agent": `Mozilla/5.0 (compatible; UXAbility/1.0; +${SITE_URL})`,
+                            "Accept": "text/html,application/xhtml+xml",
+                        },
+                        redirect: "follow",
+                    });
                     if (!res.ok) continue;
                     const subHtml = await res.text();
                     const secondLevelLinks = await getLinksFromHtml(subHtml, link);
@@ -309,7 +324,7 @@ async function analyzeUrl(
             const pageRes = await fetch(url, {
                 headers: {
                     // Some sites return a generic shell without metadata to non-browser UAs.
-                    "User-Agent": "Mozilla/5.0 (compatible; SiteAnalyzer/1.0; +https://example.com/bot)",
+                    "User-Agent": `Mozilla/5.0 (compatible; UXAbility/1.0; +${SITE_URL})`,
                     "Accept": "text/html,application/xhtml+xml",
                     "Accept-Language": lang === "en" ? "en-US,en;q=0.9" : "it-IT,it;q=0.9,en;q=0.5",
                 },
@@ -459,36 +474,130 @@ async function analyzeUrl(
 export async function POST(req: Request) {
     let responseLang = "it";
 
+    const rateLimit = applyRateLimit(req, "analyze", ANALYZE_RATE_LIMIT);
+    if (!rateLimit.allowed) {
+        return rateLimitResponse(publicAnalyzeMessage("quota", responseLang));
+    }
+
+    let body: { url?: string; lang?: string; fast?: boolean; maxPages?: number; stream?: boolean };
     try {
-        const { url, lang, fast = false, maxPages } = await req.json();
-        responseLang = lang === "en" ? "en" : "it";
+        body = await req.json();
+    } catch {
+        return NextResponse.json(
+            { error: publicAnalyzeMessage("invalid_url", responseLang), code: "invalid_url" },
+            { status: 400 },
+        );
+    }
 
-        if (!url) {
-            return NextResponse.json(
-                { error: publicAnalyzeMessage("invalid_url", responseLang), code: "invalid_url" },
-                { status: 400 },
-            );
-        }
+    const { url, lang, fast = false, maxPages, stream = false } = body;
+    responseLang = lang === "en" ? "en" : "it";
 
-        try {
-            new URL(url);
-        } catch {
-            return NextResponse.json(
-                { error: publicAnalyzeMessage("invalid_url", responseLang), code: "invalid_url" },
-                { status: 400 },
-            );
-        }
+    if (!url) {
+        return NextResponse.json(
+            { error: publicAnalyzeMessage("invalid_url", responseLang), code: "invalid_url" },
+            { status: 400 },
+        );
+    }
 
-        const apiKey = process.env.PAGESPEED_API_KEY;
-        const requestedMaxPages = fast
-            ? 1
-            : Math.min(4, Math.max(1, Number.isFinite(Number(maxPages)) ? Number(maxPages) : 4));
-        // Always run the metadata fallback (single GET) — without it the llms.txt
-        // generator and social preview render empty placeholders for every page.
-        const analyzeOptions = { metadataFallback: true };
+    let safeUrl: string;
+    try {
+        safeUrl = await assertPublicHttpUrl(url);
+    } catch (safeUrlError) {
+        const code = safeUrlError instanceof Error && safeUrlError.message === "invalid_url" ? "invalid_url" : "blocked";
+        return NextResponse.json(
+            { error: publicAnalyzeMessage(code, responseLang), code },
+            { status: 400 },
+        );
+    }
 
-        // 1. Analyze main URL first
-        const mainResult = await analyzeUrl(url, apiKey, responseLang, analyzeOptions);
+    const apiKey = process.env.PAGESPEED_API_KEY;
+    const requestedMaxPages = fast
+        ? 1
+        : Math.min(4, Math.max(1, Number.isFinite(Number(maxPages)) ? Number(maxPages) : 4));
+    const analyzeOptions = { metadataFallback: true };
+
+    // Streaming path — emit NDJSON so the UI can render the first page immediately
+    // instead of waiting up to 4 × 55s for the full batch.
+    if (stream) {
+        const encoder = new TextEncoder();
+        const readable = new ReadableStream({
+            async start(controller) {
+                let closed = false;
+                const send = (event: object) => {
+                    if (closed) return;
+                    controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+                };
+                const close = () => {
+                    if (closed) return;
+                    closed = true;
+                    controller.close();
+                };
+
+                try {
+                    send({ type: "start", total: requestedMaxPages });
+
+                    let mainResult;
+                    try {
+                        mainResult = await analyzeUrl(safeUrl, apiKey, responseLang, analyzeOptions);
+                    } catch (error) {
+                        const code = error instanceof PublicAnalyzeError ? error.code : "generic";
+                        send({ type: "error", code, error: publicAnalyzeMessage(code, responseLang) });
+                        return;
+                    }
+
+                    send({ type: "result", index: 0, result: mainResult });
+
+                    if (requestedMaxPages <= 1) {
+                        send({ type: "done" });
+                        return;
+                    }
+
+                    const analyzedUrls = new Set<string>([normalizeUrl(mainResult.url)]);
+                    const potentialLinks = await recursiveCrawl(safeUrl, requestedMaxPages);
+                    console.log(`[analyze] crawl found ${potentialLinks.length} candidate(s) for ${safeUrl}`);
+                    let emitted = 1;
+                    let failedSubpages = 0;
+
+                    for (const link of potentialLinks) {
+                        if (emitted >= requestedMaxPages) break;
+                        const normLink = normalizeUrl(link);
+                        if (analyzedUrls.has(normLink)) continue;
+
+                        try {
+                            const result = await analyzeUrl(link, apiKey, responseLang, analyzeOptions);
+                            const normFinalUrl = normalizeUrl(result.url);
+                            if (analyzedUrls.has(normFinalUrl)) continue;
+                            analyzedUrls.add(normFinalUrl);
+                            send({ type: "result", index: emitted, result });
+                            emitted += 1;
+                        } catch (e) {
+                            failedSubpages += 1;
+                            console.error(`[analyze] subpage ${link} failed:`, e instanceof Error ? e.message : e);
+                        }
+                    }
+
+                    console.log(`[analyze] emitted ${emitted}/${requestedMaxPages} results (${failedSubpages} failures)`);
+                    send({ type: "done" });
+                } catch (error) {
+                    console.error("Streaming analysis error:", error);
+                    send({ type: "error", code: "generic", error: publicAnalyzeMessage("generic", responseLang) });
+                } finally {
+                    close();
+                }
+            },
+        });
+
+        return new Response(readable, {
+            headers: {
+                "Content-Type": "application/x-ndjson; charset=utf-8",
+                "Cache-Control": "no-store",
+            },
+        });
+    }
+
+    // Non-streaming path (kept for callers that still expect a single JSON payload).
+    try {
+        const mainResult = await analyzeUrl(safeUrl, apiKey, responseLang, analyzeOptions);
         const allResults = [mainResult];
         const analyzedUrls = new Set<string>([normalizeUrl(mainResult.url)]);
 
@@ -496,20 +605,15 @@ export async function POST(req: Request) {
             return NextResponse.json({ results: allResults });
         }
 
-        // 2. Discover potential candidates recursively to ensure we hit 5
-        const potentialLinks = await recursiveCrawl(url, requestedMaxPages);
-
-        // 3. Analyze sequentially until we reach 5 successful results
+        const potentialLinks = await recursiveCrawl(safeUrl, requestedMaxPages);
         for (const link of potentialLinks) {
             if (allResults.length >= requestedMaxPages) break;
-
             const normLink = normalizeUrl(link);
             if (analyzedUrls.has(normLink)) continue;
 
             try {
                 const result = await analyzeUrl(link, apiKey, responseLang, analyzeOptions);
                 const normFinalUrl = normalizeUrl(result.url);
-
                 if (!analyzedUrls.has(normFinalUrl)) {
                     allResults.push(result);
                     analyzedUrls.add(normFinalUrl);
@@ -528,7 +632,6 @@ export async function POST(req: Request) {
                 { status: error.status },
             );
         }
-
         return NextResponse.json(
             { error: publicAnalyzeMessage("generic", responseLang), code: "generic" },
             { status: 500 },

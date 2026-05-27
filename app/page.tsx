@@ -3,13 +3,14 @@
 import { useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Loader2, ArrowRight, CheckCircle2, Globe, FileText, Zap, Bot, Radar, Network, Sparkles, ShieldCheck, Gauge, Leaf, Target, TrendingUp, AlertTriangle, ChevronRight } from "lucide-react";
+import { Search, Loader2, ArrowRight, CheckCircle2, Globe, FileText, Zap, Bot, Radar, Network, Sparkles, ShieldCheck, Gauge, Leaf, Target, TrendingUp, AlertTriangle, ChevronRight, ClipboardCopy, Check } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CreativeBackdrop from "@/components/CreativeBackdrop";
 import type { BotPolicyResult } from "@/components/AIBotPolicy";
 import { useLanguage } from "@/context/LanguageContext";
 import { buildFixSuggestions, type FixSuggestion } from "@/lib/fixSuggestions";
+import { buildMarkdownReport } from "@/lib/markdownReport";
 
 const ScoreCircle = dynamic(() => import("@/components/ScoreCircle"));
 const OpportunityCard = dynamic(() => import("@/components/OpportunityCard"));
@@ -47,8 +48,12 @@ const emptyAeoSignals = {
 };
 
 const ANALYSIS_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
-const ANALYSIS_CACHE_PREFIX = "uxability:analysis:v3:";
-const LAST_UPDATED = "2026-05-26";
+// Bumped to v4: prior versions could cache a partial crawl (just the main page)
+// produced by a now-fixed stream bug, leaving users stuck on single-page results.
+const ANALYSIS_CACHE_PREFIX = "uxability:analysis:v4:";
+// Defaults to build time so the "last updated" stamp stays honest without a manual
+// bump on every deploy. Override via NEXT_PUBLIC_BUILD_DATE to pin a release date.
+const LAST_UPDATED = (process.env.NEXT_PUBLIC_BUILD_DATE || new Date().toISOString()).slice(0, 10);
 
 interface CachedValue<T> {
   timestamp: number;
@@ -227,6 +232,10 @@ export default function Home() {
   const [crawlInternalPages, setCrawlInternalPages] = useState(false);
   const [maxExtraUrls, setMaxExtraUrls] = useState(3);
   const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
+  const [markdownCopied, setMarkdownCopied] = useState(false);
+  // While the analyze stream is running, mirror the server's expected page count
+  // so the UI can render skeleton tabs for pages that haven't arrived yet.
+  const [pendingResultsCount, setPendingResultsCount] = useState(0);
   const analysisRunRef = useRef(0);
   const { language, t } = useLanguage();
 
@@ -249,6 +258,7 @@ export default function Home() {
     setPrivacyResult(null);
     setBotPolicyResult(null);
     setActiveResultIndex(0);
+    setPendingResultsCount(crawlInternalPages ? maxExtraUrls + 1 : 1);
 
     const runId = analysisRunRef.current + 1;
     analysisRunRef.current = runId;
@@ -324,28 +334,90 @@ export default function Home() {
           })
           .catch(() => botsFallback);
 
-      const data = cachedAnalyze
-        ? cachedAnalyze
-        : await fetch("/api/analyze", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              url: formattedUrl,
-              lang: language,
-              fast: !crawlInternalPages,
-              maxPages: crawlInternalPages ? maxExtraUrls + 1 : 1,
-            }),
-        }).then(async (response) => {
-          const payload = await response.json();
-          if (!response.ok) throw new Error(payload.error || t("analysisError"));
-          if (shouldCacheResult(payload)) setCachedValue(analyzeCacheKey, payload);
-          return payload;
+      if (cachedAnalyze) {
+        if (runId !== analysisRunRef.current) return;
+        setResults(cachedAnalyze.results);
+        setPendingResultsCount(0);
+        setLoading(false);
+      } else {
+        const response = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: formattedUrl,
+            lang: language,
+            fast: !crawlInternalPages,
+            maxPages: crawlInternalPages ? maxExtraUrls + 1 : 1,
+            stream: true,
+          }),
         });
 
-      if (runId !== analysisRunRef.current) return;
+        if (!response.ok || !response.body) {
+          let payload: { error?: string } = {};
+          try { payload = await response.json(); } catch { /* non-JSON */ }
+          throw new Error(payload.error || t("analysisError"));
+        }
 
-      setResults(data.results);
-      setLoading(false);
+        // NDJSON stream: append each "result" event as it arrives so the user sees
+        // the first page immediately instead of waiting for the full batch.
+        const streamed: NonNullable<typeof results> = [];
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let firstResultDelivered = false;
+        let streamError: { message: string } | null = null;
+        let streamDone = false;
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          let newlineIdx = buffer.indexOf("\n");
+          while (newlineIdx !== -1) {
+            const line = buffer.slice(0, newlineIdx).trim();
+            buffer = buffer.slice(newlineIdx + 1);
+            newlineIdx = buffer.indexOf("\n");
+            if (!line) continue;
+
+            let event: { type?: string; result?: unknown; error?: string };
+            try { event = JSON.parse(line); } catch { continue; }
+
+            if (event.type === "start" && typeof (event as { total?: number }).total === "number") {
+              const total = (event as { total: number }).total;
+              setPendingResultsCount(Math.max(0, total));
+            } else if (event.type === "result" && event.result) {
+              if (runId !== analysisRunRef.current) {
+                await reader.cancel();
+                return;
+              }
+              streamed.push(event.result as never);
+              setResults([...streamed]);
+              setPendingResultsCount((prev) => Math.max(0, prev - 1));
+              if (!firstResultDelivered) {
+                firstResultDelivered = true;
+                setLoading(false);
+              }
+            } else if (event.type === "error") {
+              streamError = { message: event.error || t("analysisError") };
+            } else if (event.type === "done") {
+              streamDone = true;
+              setPendingResultsCount(0);
+            }
+          }
+        }
+
+        if (streamError && streamed.length === 0) throw new Error(streamError.message);
+        // Only persist when the stream finished cleanly AND we got the requested
+        // page count — otherwise a partial run could lock subsequent loads onto a
+        // single-page result.
+        const expected = crawlInternalPages ? maxExtraUrls + 1 : 1;
+        if (streamDone && streamed.length >= expected) {
+          setCachedValue(analyzeCacheKey, { results: streamed });
+        }
+      }
+
+      if (runId !== analysisRunRef.current) return;
 
       void Promise.allSettled([aeoPromise, privacyPromise, botsPromise]).then(([aeoSettled, privacySettled, botsSettled]) => {
         if (runId !== analysisRunRef.current) return;
@@ -359,6 +431,7 @@ export default function Home() {
         setError(getFriendlyAnalysisError(err, t("analysisError"), language));
       }
       setLoading(false);
+      setPendingResultsCount(0);
     }
   };
 
@@ -418,13 +491,13 @@ export default function Home() {
 
     const sanitizePdfText = (value: string = "") => value
       .replace(/<[^>]*>/g, " ")
-      .replace(/â€”|–|—/g, "-")
-      .replace(/Ã—|×/g, "x")
-      .replace(/COâ‚‚|CO₂/g, "CO2")
-      .replace(/â‰¥|≥/g, ">=")
-      .replace(/â‰¤|≤/g, "<=")
-      .replace(/â†’|→/g, "->")
-      .replace(/Â·|·/g, "/")
+      .replace(/–|—/g, "-")
+      .replace(/×/g, "x")
+      .replace(/CO₂/g, "CO2")
+      .replace(/≥/g, ">=")
+      .replace(/≤/g, "<=")
+      .replace(/→/g, "->")
+      .replace(/·/g, "/")
       .replace(/[“”]/g, '"')
       .replace(/[‘’]/g, "'")
       .replace(/\s+/g, " ")
@@ -1337,6 +1410,39 @@ export default function Home() {
                     <FileText size={18} className="text-stone-500" />
                     {t('exportPdf')}
                   </button>
+                  <button
+                    onClick={async () => {
+                      if (!results) return;
+                      const md = buildMarkdownReport({
+                        results: results as any,
+                        aeoResult: aeoResult as any,
+                        privacyResult: privacyResult as any,
+                        language: language === "it" ? "it" : "en",
+                      });
+                      try {
+                        await navigator.clipboard.writeText(md);
+                        setMarkdownCopied(true);
+                        setTimeout(() => setMarkdownCopied(false), 2000);
+                      } catch {
+                        // Clipboard API can fail in non-secure contexts; fall back to a textarea.
+                        const ta = document.createElement("textarea");
+                        ta.value = md;
+                        document.body.appendChild(ta);
+                        ta.select();
+                        try { document.execCommand("copy"); } finally { document.body.removeChild(ta); }
+                        setMarkdownCopied(true);
+                        setTimeout(() => setMarkdownCopied(false), 2000);
+                      }
+                    }}
+                    type="button"
+                    aria-live="polite"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg premium-surface hover:border-stone-400 transition-all text-sm font-medium text-stone-800"
+                  >
+                    {markdownCopied
+                      ? <Check size={18} className="text-[var(--success)]" />
+                      : <ClipboardCopy size={18} className="text-stone-500" />}
+                    {markdownCopied ? t('copyMarkdownDone') : t('copyMarkdown')}
+                  </button>
                   <div className="flex items-center gap-2 text-stone-800 premium-surface px-4 py-2 rounded-lg text-sm font-medium">
                     <CheckCircle2 size={18} className="text-[var(--success)]" />
                     <span>{t('analyzed')}</span>
@@ -1345,7 +1451,7 @@ export default function Home() {
               </div>
 
               {/* Page Selector Tabs */}
-              {results.length > 1 && (
+              {(results.length > 1 || pendingResultsCount > 0) && (
                 <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 -mt-6">
                   {results.map((res, i) => (
                     <button
@@ -1371,6 +1477,17 @@ export default function Home() {
                         })()}
                       </span>
                     </button>
+                  ))}
+                  {Array.from({ length: pendingResultsCount }).map((_, i) => (
+                    <div
+                      key={`tab-skeleton-${i}`}
+                      role="status"
+                      aria-label={language === "it" ? "Caricamento pagina" : "Loading page"}
+                      className="flex items-center gap-2 px-4 md:px-6 py-2 rounded-lg border border-dashed border-stone-300 bg-stone-100/40"
+                    >
+                      <Loader2 size={12} className="animate-spin text-stone-400" />
+                      <span className="h-2.5 w-12 md:w-16 rounded-full bg-stone-200 animate-pulse" />
+                    </div>
                   ))}
                 </div>
               )}
@@ -1662,7 +1779,7 @@ export default function Home() {
             <p className="text-[11px] font-medium text-stone-500">
               {language === "it" ? "Aggiornato il " : "Updated on "}
               <time dateTime={LAST_UPDATED}>
-                {language === "it" ? "26 maggio 2026" : "May 26, 2026"}
+                {new Date(LAST_UPDATED).toLocaleDateString(language === "it" ? "it-IT" : "en-US", { year: "numeric", month: "long", day: "numeric" })}
               </time>
             </p>
           </div>
