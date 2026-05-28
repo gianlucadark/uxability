@@ -3,12 +3,12 @@ import * as cheerio from "cheerio";
 import { applyRateLimit, assertPublicHttpUrl, rateLimitResponse } from "@/lib/server/publicApi";
 import { SITE_URL } from "@/lib/site";
 
-// Heavy pages (Wikipedia, news sites) can keep PageSpeed busy for 30-45s. Default
-// Vercel serverless limit on Hobby is 10s — bump to 60s so the analyze route doesn't
-// time out before PageSpeed finishes.
+// Vercel Hobby cap is 60s. We give PageSpeed 55s and let the client retry
+// automatically on timeout so each attempt gets a fresh 60s window.
 export const maxDuration = 60;
 
 const PAGESPEED_TIMEOUT_MS = 55_000;
+const PAGESPEED_RETRY_TIMEOUT_MS = 55_000;
 const ANALYZE_RATE_LIMIT = { limit: 30, windowMs: 24 * 60 * 60 * 1000 };
 
 type AnalyzeErrorCode =
@@ -182,17 +182,18 @@ async function analyzeUrl(
     url: string,
     apiKey?: string,
     lang: string = 'it',
-    options: { metadataFallback?: boolean } = {},
+    options: { metadataFallback?: boolean; isRetry?: boolean } = {},
 ) {
-    const { metadataFallback = true } = options;
+    const { metadataFallback = true, isRetry = false } = options;
     const locale = lang === 'en' ? 'en-US' : 'it';
     const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(
         url
     )}&category=performance&category=accessibility&category=best-practices&category=seo&locale=${locale}${apiKey ? `&key=${apiKey}` : ""}`;
+    const fetchTimeout = isRetry ? PAGESPEED_RETRY_TIMEOUT_MS : PAGESPEED_TIMEOUT_MS;
 
     let response: Response;
     try {
-        response = await fetch(apiUrl, { signal: AbortSignal.timeout(PAGESPEED_TIMEOUT_MS) });
+        response = await fetch(apiUrl, { signal: AbortSignal.timeout(fetchTimeout) });
     } catch (err: unknown) {
         const name = errorName(err);
         if (name === "TimeoutError" || name === "AbortError") {
@@ -271,20 +272,24 @@ async function analyzeUrl(
         favicon: audits["favicon"]?.details?.data || null,
     };
 
-    const seoScore = Math.round(categoriesData.seo.score * 100);
-    const accessibilityScore = Math.round(categoriesData.accessibility.score * 100);
-
+    // Categories may be missing on the lightweight retry pass (performance-only).
+    const safeScore = (key: string) => {
+        const c = categoriesData?.[key];
+        return c && typeof c.score === "number" ? Math.round(c.score * 100) : 0;
+    };
     const scores = {
-        performance: Math.round(categoriesData.performance.score * 100),
-        accessibility: accessibilityScore,
-        bestPractices: Math.round(categoriesData["best-practices"].score * 100),
-        seo: seoScore,
+        performance: safeScore("performance"),
+        accessibility: safeScore("accessibility"),
+        bestPractices: safeScore("best-practices"),
+        seo: safeScore("seo"),
     };
 
     const getDetailedAudits = (categoryKey: string) => {
-        const category = categoriesData[categoryKey];
+        const category = categoriesData?.[categoryKey];
+        if (!category?.auditRefs) return [];
         return category.auditRefs.map((ref: any) => {
             const audit = audits[ref.id];
+            if (!audit) return { id: ref.id, title: ref.id, description: "", score: null, displayValue: "" };
             return {
                 id: ref.id,
                 title: audit.title,
@@ -471,6 +476,10 @@ async function analyzeUrl(
     };
 }
 
+// Alias kept for call-site consistency. On Hobby (60s cap) there is no time
+// for a server-side retry — the client handles retries instead.
+const analyzeUrlResilient = analyzeUrl;
+
 export async function POST(req: Request) {
     let responseLang = "it";
 
@@ -538,7 +547,7 @@ export async function POST(req: Request) {
 
                     let mainResult;
                     try {
-                        mainResult = await analyzeUrl(safeUrl, apiKey, responseLang, analyzeOptions);
+                        mainResult = await analyzeUrlResilient(safeUrl, apiKey, responseLang, analyzeOptions);
                     } catch (error) {
                         const code = error instanceof PublicAnalyzeError ? error.code : "generic";
                         send({ type: "error", code, error: publicAnalyzeMessage(code, responseLang) });
@@ -564,7 +573,7 @@ export async function POST(req: Request) {
                         if (analyzedUrls.has(normLink)) continue;
 
                         try {
-                            const result = await analyzeUrl(link, apiKey, responseLang, analyzeOptions);
+                            const result = await analyzeUrlResilient(link, apiKey, responseLang, analyzeOptions);
                             const normFinalUrl = normalizeUrl(result.url);
                             if (analyzedUrls.has(normFinalUrl)) continue;
                             analyzedUrls.add(normFinalUrl);
@@ -597,7 +606,7 @@ export async function POST(req: Request) {
 
     // Non-streaming path (kept for callers that still expect a single JSON payload).
     try {
-        const mainResult = await analyzeUrl(safeUrl, apiKey, responseLang, analyzeOptions);
+        const mainResult = await analyzeUrlResilient(safeUrl, apiKey, responseLang, analyzeOptions);
         const allResults = [mainResult];
         const analyzedUrls = new Set<string>([normalizeUrl(mainResult.url)]);
 
@@ -612,7 +621,7 @@ export async function POST(req: Request) {
             if (analyzedUrls.has(normLink)) continue;
 
             try {
-                const result = await analyzeUrl(link, apiKey, responseLang, analyzeOptions);
+                const result = await analyzeUrlResilient(link, apiKey, responseLang, analyzeOptions);
                 const normFinalUrl = normalizeUrl(result.url);
                 if (!analyzedUrls.has(normFinalUrl)) {
                     allResults.push(result);

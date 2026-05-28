@@ -106,7 +106,7 @@ function shouldCacheResult(value: unknown): boolean {
 }
 
 function getFriendlyAnalysisError(error: unknown, fallback: string, language: string): string {
-  const technicalPattern = /pagespeed|lighthouse|timeout|abort|network|failed to fetch|fetch failed|status\s?\d{3}|api|json|server/i;
+  const technicalPattern = /pagespeed|lighthouse|abort|network|failed to fetch|fetch failed|status\s?\d{3}|api|json|server/i;
   const message = error instanceof Error ? error.message : "";
 
   if (!message || technicalPattern.test(message)) {
@@ -118,6 +118,12 @@ function getFriendlyAnalysisError(error: unknown, fallback: string, language: st
   }
 
   return message;
+}
+
+// Heuristic: messages mentioning "too long" / "troppo tempo" are server-side
+// PageSpeed timeouts. We surface those as a soft notice instead of a hard error.
+function isTimeoutErrorMessage(message: string): boolean {
+  return /troppo tempo|taking too long|timed out|timeout/i.test(message);
 }
 
 type DashboardTab = "overview" | "performance" | "ai" | "privacy";
@@ -225,6 +231,8 @@ export default function Home() {
   const [results, setResults] = useState<any[] | null>(null);
   const [activeResultIndex, setActiveResultIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [errorKind, setErrorKind] = useState<"hard" | "slow">("hard");
+  const [retrying, setRetrying] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [aeoResult, setAeoResult] = useState<any | null>(null);
   const [privacyResult, setPrivacyResult] = useState<any | null>(null);
@@ -236,16 +244,27 @@ export default function Home() {
   // While the analyze stream is running, mirror the server's expected page count
   // so the UI can render skeleton tabs for pages that haven't arrived yet.
   const [pendingResultsCount, setPendingResultsCount] = useState(0);
+  // Live status of each parallel analysis lane, surfaced in the loading panel
+  // so the user sees concrete progress instead of an opaque spinner.
+  type LaneStatus = "idle" | "running" | "done" | "error";
+  const [loadingLanes, setLoadingLanes] = useState<{ html: LaneStatus; lighthouse: LaneStatus; aeo: LaneStatus; privacy: LaneStatus; bots: LaneStatus }>(
+    { html: "idle", lighthouse: "idle", aeo: "idle", privacy: "idle", bots: "idle" }
+  );
+  const [lastSubmittedUrl, setLastSubmittedUrl] = useState<string | null>(null);
   const analysisRunRef = useRef(0);
   const { language, t } = useLanguage();
 
-  const handleAnalyze = async (e: React.FormEvent) => {
+  const setLane = (lane: keyof typeof loadingLanes, status: LaneStatus) =>
+    setLoadingLanes((prev) => ({ ...prev, [lane]: status }));
+
+  const handleAnalyze = async (e: React.FormEvent, overrideUrl?: string) => {
     e.preventDefault();
-    if (!url) return;
+    const targetUrl = overrideUrl ?? url;
+    if (!targetUrl) return;
 
     // Simple URL validation
     try {
-      new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`);
+      new URL(/^https?:\/\//i.test(targetUrl) ? targetUrl : `https://${targetUrl}`);
     } catch {
       setError(t('invalidUrl'));
       return;
@@ -259,12 +278,15 @@ export default function Home() {
     setBotPolicyResult(null);
     setActiveResultIndex(0);
     setPendingResultsCount(crawlInternalPages ? maxExtraUrls + 1 : 1);
+    setLastSubmittedUrl(targetUrl);
+    setRetrying(false);
+    setLoadingLanes({ html: "running", lighthouse: "running", aeo: "running", privacy: "running", bots: "running" });
 
     const runId = analysisRunRef.current + 1;
     analysisRunRef.current = runId;
 
     try {
-      const formattedUrl = normalizeAnalysisUrl(url);
+      const formattedUrl = normalizeAnalysisUrl(targetUrl);
       const aeoCacheKey = `aeo:${formattedUrl}`;
       const privacyCacheKey = `privacy:${formattedUrl}`;
       const botsCacheKey = `bots:${formattedUrl}`;
@@ -287,9 +309,9 @@ export default function Home() {
       const cachedBots = getCachedValue<BotPolicyResult>(botsCacheKey);
       const cachedAnalyze = getCachedValue<{ results: NonNullable<typeof results> }>(analyzeCacheKey);
 
-      if (cachedAeo) setAeoResult(cachedAeo);
-      if (cachedPrivacy) setPrivacyResult(cachedPrivacy);
-      if (cachedBots) setBotPolicyResult(cachedBots);
+      if (cachedAeo) { setAeoResult(cachedAeo); setLane("aeo", "done"); }
+      if (cachedPrivacy) { setPrivacyResult(cachedPrivacy); setLane("privacy", "done"); }
+      if (cachedBots) { setBotPolicyResult(cachedBots); setLane("bots", "done"); }
 
       const aeoPromise = cachedAeo
         ? Promise.resolve(cachedAeo)
@@ -339,6 +361,8 @@ export default function Home() {
         setResults(cachedAnalyze.results);
         setPendingResultsCount(0);
         setLoading(false);
+        setLane("html", "done");
+        setLane("lighthouse", "done");
       } else {
         const response = await fetch("/api/analyze", {
           method: "POST",
@@ -380,7 +404,7 @@ export default function Home() {
             newlineIdx = buffer.indexOf("\n");
             if (!line) continue;
 
-            let event: { type?: string; result?: unknown; error?: string };
+            let event: { type?: string; result?: unknown; error?: string; code?: string };
             try { event = JSON.parse(line); } catch { continue; }
 
             if (event.type === "start" && typeof (event as { total?: number }).total === "number") {
@@ -397,17 +421,38 @@ export default function Home() {
               if (!firstResultDelivered) {
                 firstResultDelivered = true;
                 setLoading(false);
+                setLane("html", "done");
               }
             } else if (event.type === "error") {
-              streamError = { message: event.error || t("analysisError") };
+              if (event.code === "timeout" && streamed.length === 0) {
+                // Server hit the 60s Vercel cap. Mark for silent client-side retry
+                // so the user gets a fresh 60s window instead of an error banner.
+                streamError = { message: "__timeout_retry__" };
+              } else {
+                streamError = { message: event.error || t("analysisError") };
+              }
+              setLane("lighthouse", "error");
             } else if (event.type === "done") {
               streamDone = true;
               setPendingResultsCount(0);
+              setLane("lighthouse", "done");
             }
           }
         }
 
-        if (streamError && streamed.length === 0) throw new Error(streamError.message);
+        if (streamError && streamed.length === 0) {
+          if (streamError.message === "__timeout_retry__") {
+            // The server's 60s window expired. Re-invoke transparently: the user
+            // keeps seeing the loading panel and gets a fresh 60s attempt.
+            if (runId === analysisRunRef.current) {
+              setRetrying(true);
+              setLoadingLanes({ html: "running", lighthouse: "running", aeo: loadingLanes.aeo, privacy: loadingLanes.privacy, bots: loadingLanes.bots });
+              void handleAnalyze({ preventDefault: () => {} } as React.FormEvent, targetUrl);
+            }
+            return;
+          }
+          throw new Error(streamError.message);
+        }
         // Only persist when the stream finished cleanly AND we got the requested
         // page count — otherwise a partial run could lock subsequent loads onto a
         // single-page result.
@@ -419,16 +464,22 @@ export default function Home() {
 
       if (runId !== analysisRunRef.current) return;
 
-      void Promise.allSettled([aeoPromise, privacyPromise, botsPromise]).then(([aeoSettled, privacySettled, botsSettled]) => {
-        if (runId !== analysisRunRef.current) return;
-
-        setAeoResult(aeoSettled.status === "fulfilled" ? aeoSettled.value : aeoFallback);
-        setPrivacyResult(privacySettled.status === "fulfilled" ? privacySettled.value : privacyFallback);
-        setBotPolicyResult(botsSettled.status === "fulfilled" ? botsSettled.value : botsFallback);
-      });
+      void aeoPromise.then((v) => { if (runId === analysisRunRef.current) { setAeoResult(v); setLane("aeo", v && (v as any).error ? "error" : "done"); } });
+      void privacyPromise.then((v) => { if (runId === analysisRunRef.current) { setPrivacyResult(v); setLane("privacy", v && (v as any).error ? "error" : "done"); } });
+      void botsPromise.then((v) => { if (runId === analysisRunRef.current) { setBotPolicyResult(v); setLane("bots", v && (v as any).error ? "error" : "done"); } });
     } catch (err) {
       if (runId === analysisRunRef.current) {
-        setError(getFriendlyAnalysisError(err, t("analysisError"), language));
+        const rawMessage = err instanceof Error ? err.message : "";
+        if (isTimeoutErrorMessage(rawMessage)) {
+          setErrorKind("slow");
+          setError(language === "it"
+            ? "L'analisi sta richiedendo più tempo del solito. La pagina potrebbe essere molto pesante."
+            : "Analysis is taking longer than usual. The page may be very heavy.");
+          setLane("lighthouse", "error");
+        } else {
+          setErrorKind("hard");
+          setError(getFriendlyAnalysisError(err, t("analysisError"), language));
+        }
       }
       setLoading(false);
       setPendingResultsCount(0);
@@ -464,6 +515,22 @@ export default function Home() {
   }, [currentResult, aeoResult, privacyResult]);
 
   const verdict = useMemo(() => getVerdict(overallScore, language), [overallScore, language]);
+
+  // Pick the lowest-scoring dimension so the user immediately sees what's
+  // dragging the verdict down (and can jump to the right tab).
+  const dominantFactor = useMemo(() => {
+    if (!currentResult) return null;
+    const s = currentResult.scores || {};
+    const candidates: { key: string; label: string; value: number; tab: DashboardTab }[] = [
+      { key: "perf", label: t('performance'), value: s.performance ?? 100, tab: "performance" },
+      { key: "a11y", label: t('accessibility'), value: s.accessibility ?? 100, tab: "performance" },
+      { key: "seo", label: t('seo'), value: s.seo ?? 100, tab: "performance" },
+      { key: "aeo", label: "AEO", value: aeoResult?.aeo ?? 100, tab: "ai" },
+      { key: "privacy", label: language === "it" ? "Privacy" : "Privacy", value: privacyResult?.privacyScore ?? 100, tab: "privacy" },
+    ];
+    const worst = candidates.reduce((a, b) => (b.value < a.value ? b : a));
+    return worst.value < 80 ? worst : null;
+  }, [currentResult, aeoResult, privacyResult, language, t]);
 
   const exportToPDF = async () => {
     if (!results) return;
@@ -1100,13 +1167,6 @@ export default function Home() {
     doc.save(filename);
   };
 
-  const marqueeItems = [
-    "PERFORMANCE", "ACCESSIBILITY", "SEO", "CORE WEB VITALS",
-    "AI ANALYSIS", "UX AUDIT", "AEO SCORE", "BEST PRACTICES",
-    "FRUSTRATION INDEX", "LIGHTHOUSE", "RESOURCE BREAKDOWN",
-    "CARBON FOOTPRINT", "PRIVACY SCORE", "AI BOT POLICY",
-  ];
-
   return (
     <div className="min-h-screen flex flex-col items-center overflow-x-hidden text-[var(--foreground)] relative">
       <CreativeBackdrop />
@@ -1303,18 +1363,37 @@ export default function Home() {
                         </div>
                       </div>
                       <p className="mt-1 text-xs font-medium text-stone-600">
-                        {t('crawlingText')}
+                        {retrying
+                          ? (language === "it" ? "Pagina pesante — secondo tentativo in corso…" : "Heavy page — retrying…")
+                          : t('crawlingText')}
                       </p>
-                      <div className="mt-3 grid grid-cols-3 gap-1.5">
-                        {[t('scanStepStructure'), t('scanStepVitals'), t('scanStepAI')].map((step, index) => (
-                          <span
-                            key={step}
-                            className="scan-chip"
-                            style={{ animationDelay: `${index * 0.28}s` }}
-                          >
-                            {step}
-                          </span>
-                        ))}
+                      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                        {([
+                          { key: "html", label: "HTML" },
+                          { key: "lighthouse", label: "Vitals" },
+                          { key: "aeo", label: "AEO" },
+                          { key: "privacy", label: "Privacy" },
+                          { key: "bots", label: "Bots" },
+                        ] as const).map((step) => {
+                          const status = loadingLanes[step.key];
+                          const icon = status === "done" ? "✓" : status === "error" ? "!" : status === "running" ? "•" : "○";
+                          const color = status === "done"
+                            ? "text-[var(--success)] border-[var(--success)]/30 bg-[var(--success)]/8"
+                            : status === "error"
+                            ? "text-[var(--danger)] border-[var(--danger)]/30 bg-[var(--danger)]/8"
+                            : status === "running"
+                            ? "text-stone-700 border-stone-400/40 bg-white/70"
+                            : "text-stone-400 border-stone-200 bg-white/40";
+                          return (
+                            <span
+                              key={step.key}
+                              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${color}`}
+                            >
+                              <span className={`inline-flex h-3 w-3 items-center justify-center text-[10px] leading-none font-bold ${status === "running" ? "animate-pulse" : ""}`}>{icon}</span>
+                              {step.label}
+                            </span>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -1324,14 +1403,75 @@ export default function Home() {
             </AnimatePresence>
 
             {error && (
-              <motion.p
+              <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 role="alert"
-                className="mt-4 text-[var(--danger)] font-medium"
+                className={`mt-4 mx-auto max-w-xl flex items-start gap-3 rounded-xl border p-3 text-left ${errorKind === "slow"
+                  ? "border-[#b7791f]/35 bg-[#b7791f]/8"
+                  : "border-[var(--danger)]/30 bg-[var(--danger)]/5"
+                  }`}
               >
-                {error}
-              </motion.p>
+                <span className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-black ${errorKind === "slow" ? "bg-[#b7791f]/20 text-[#b7791f]" : "bg-[var(--danger)]/20 text-[var(--danger)]"}`}>
+                  {errorKind === "slow" ? "⏱" : "!"}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-sm font-semibold ${errorKind === "slow" ? "text-stone-800" : "text-[var(--danger)]"}`}>
+                    {error}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {lastSubmittedUrl && (
+                      <button
+                        type="button"
+                        onClick={() => { setUrl(lastSubmittedUrl); handleAnalyze({ preventDefault: () => {} } as React.FormEvent, lastSubmittedUrl); }}
+                        className="text-[11px] font-semibold uppercase tracking-wider px-3 py-1 rounded-full border border-stone-900/25 bg-white/80 hover:bg-stone-900 hover:text-white hover:border-stone-900 transition-all"
+                      >
+                        {language === "it" ? "Riprova" : "Retry"}
+                      </button>
+                    )}
+                    {errorKind === "slow" && (
+                      <button
+                        type="button"
+                        onClick={() => { setError(null); setUrl(""); }}
+                        className="text-[11px] font-semibold uppercase tracking-wider px-3 py-1 rounded-full border border-stone-300 bg-white/60 text-stone-700 hover:border-stone-900 hover:text-stone-900 transition-all"
+                      >
+                        {language === "it" ? "Prova un altro URL" : "Try another URL"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {!loading && !results && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="mt-5 flex flex-wrap items-center justify-center gap-2"
+              >
+                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500 mr-1">
+                  {language === "it" ? "Prova con" : "Try with"}
+                </span>
+                {[
+                  { label: "vercel.com", url: "https://vercel.com" },
+                  { label: "wikipedia.org", url: "https://wikipedia.org" },
+                  { label: "stripe.com", url: "https://stripe.com" },
+                  { label: "nytimes.com", url: "https://nytimes.com" },
+                ].map((ex) => (
+                  <button
+                    key={ex.url}
+                    type="button"
+                    onClick={() => {
+                      setUrl(ex.url);
+                      handleAnalyze({ preventDefault: () => {} } as React.FormEvent, ex.url);
+                    }}
+                    className="text-xs font-medium px-3 py-1.5 rounded-full border border-stone-300/80 bg-white/60 text-stone-700 hover:border-stone-900 hover:bg-stone-900 hover:text-white transition-all"
+                  >
+                    {ex.label}
+                  </button>
+                ))}
+              </motion.div>
             )}
           </motion.form>
 
@@ -1366,17 +1506,7 @@ export default function Home() {
           </motion.div>
         </section>
 
-        {/* Marquee strip */}
-        <div aria-hidden="true" className="relative -mx-4 md:-mx-6 overflow-hidden border-y border-stone-200 py-3 my-16">
-          <div className="flex whitespace-nowrap animate-marquee">
-            {[...marqueeItems, ...marqueeItems].map((item, i) => (
-              <span key={i} className="section-label text-stone-300 mx-10">
-                {item}
-                <span className="ml-10 text-stone-200">·</span>
-              </span>
-            ))}
-          </div>
-        </div>
+        <div className="my-12 md:my-16" />
 
         {/* Results Dashboard */}
         <AnimatePresence mode="wait">
@@ -1402,50 +1532,73 @@ export default function Home() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={exportToPDF}
-                    type="button"
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg premium-surface hover:border-stone-400 transition-all text-sm font-medium text-stone-800"
-                  >
-                    <FileText size={18} className="text-stone-500" />
-                    {t('exportPdf')}
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (!results) return;
-                      const md = buildMarkdownReport({
-                        results: results as any,
-                        aeoResult: aeoResult as any,
-                        privacyResult: privacyResult as any,
-                        language: language === "it" ? "it" : "en",
-                      });
-                      try {
-                        await navigator.clipboard.writeText(md);
-                        setMarkdownCopied(true);
-                        setTimeout(() => setMarkdownCopied(false), 2000);
-                      } catch {
-                        // Clipboard API can fail in non-secure contexts; fall back to a textarea.
-                        const ta = document.createElement("textarea");
-                        ta.value = md;
-                        document.body.appendChild(ta);
-                        ta.select();
-                        try { document.execCommand("copy"); } finally { document.body.removeChild(ta); }
-                        setMarkdownCopied(true);
-                        setTimeout(() => setMarkdownCopied(false), 2000);
-                      }
-                    }}
-                    type="button"
-                    aria-live="polite"
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg premium-surface hover:border-stone-400 transition-all text-sm font-medium text-stone-800"
-                  >
-                    {markdownCopied
-                      ? <Check size={18} className="text-[var(--success)]" />
-                      : <ClipboardCopy size={18} className="text-stone-500" />}
-                    {markdownCopied ? t('copyMarkdownDone') : t('copyMarkdown')}
-                  </button>
-                  <div className="flex items-center gap-2 text-stone-800 premium-surface px-4 py-2 rounded-lg text-sm font-medium">
-                    <CheckCircle2 size={18} className="text-[var(--success)]" />
+                  <div className="hidden md:inline-flex items-center gap-2 text-stone-700 px-3 py-1.5 rounded-full text-[11px] font-semibold uppercase tracking-wider bg-[var(--success)]/8 border border-[var(--success)]/25">
+                    <CheckCircle2 size={13} className="text-[var(--success)]" />
                     <span>{t('analyzed')}</span>
+                  </div>
+                  <div className="relative group">
+                    <button
+                      type="button"
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg premium-surface hover:border-stone-400 transition-all text-sm font-semibold text-stone-800"
+                      aria-haspopup="menu"
+                    >
+                      <FileText size={16} className="text-stone-500" />
+                      {language === "it" ? "Esporta" : "Export"}
+                      <ChevronRight size={14} className="text-stone-400 rotate-90 transition-transform group-hover:translate-y-0.5" />
+                    </button>
+                    <div
+                      role="menu"
+                      className="invisible opacity-0 group-hover:visible group-hover:opacity-100 focus-within:visible focus-within:opacity-100 absolute right-0 top-[calc(100%+6px)] z-30 w-56 rounded-xl border border-stone-200 bg-white/95 backdrop-blur-md shadow-xl p-1 transition-all"
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={exportToPDF}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-stone-800 hover:bg-stone-100 text-left"
+                      >
+                        <FileText size={16} className="text-stone-500 shrink-0" />
+                        <div className="min-w-0">
+                          <div className="font-semibold">{t('exportPdf')}</div>
+                          <div className="text-[10px] text-stone-500">PDF · {language === "it" ? "Report visivo" : "Visual report"}</div>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        aria-live="polite"
+                        onClick={async () => {
+                          if (!results) return;
+                          const md = buildMarkdownReport({
+                            results: results as any,
+                            aeoResult: aeoResult as any,
+                            privacyResult: privacyResult as any,
+                            language: language === "it" ? "it" : "en",
+                          });
+                          try {
+                            await navigator.clipboard.writeText(md);
+                            setMarkdownCopied(true);
+                            setTimeout(() => setMarkdownCopied(false), 2000);
+                          } catch {
+                            const ta = document.createElement("textarea");
+                            ta.value = md;
+                            document.body.appendChild(ta);
+                            ta.select();
+                            try { document.execCommand("copy"); } finally { document.body.removeChild(ta); }
+                            setMarkdownCopied(true);
+                            setTimeout(() => setMarkdownCopied(false), 2000);
+                          }
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-stone-800 hover:bg-stone-100 text-left"
+                      >
+                        {markdownCopied
+                          ? <Check size={16} className="text-[var(--success)] shrink-0" />
+                          : <ClipboardCopy size={16} className="text-stone-500 shrink-0" />}
+                        <div className="min-w-0">
+                          <div className="font-semibold">{markdownCopied ? t('copyMarkdownDone') : t('copyMarkdown')}</div>
+                          <div className="text-[10px] text-stone-500">Markdown · {language === "it" ? "Per LLM e doc" : "For LLMs & docs"}</div>
+                        </div>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1453,31 +1606,53 @@ export default function Home() {
               {/* Page Selector Tabs */}
               {(results.length > 1 || pendingResultsCount > 0) && (
                 <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 -mt-6">
-                  {results.map((res, i) => (
-                    <button
-                      type="button"
-                      key={`tab-${i}-${res.url}`}
-                      onClick={() => setActiveResultIndex(i)}
-                      aria-current={activeResultIndex === i ? "page" : undefined}
-                      className={`px-4 md:px-6 py-2 rounded-lg text-xs font-semibold transition-all border ${activeResultIndex === i
-                        ? "bg-stone-900 text-white border-stone-900"
-                        : "bg-transparent text-stone-600 border-stone-200 hover:border-stone-400 hover:text-stone-900"
-                        }`}
-                    >
-                      <span className="truncate max-w-[80px] md:max-w-[120px]">
-                        {(() => {
-                          try {
-                            const path = new URL(res.url).pathname;
-                            if (path === '/') return t('homePage');
-                            const parts = path.split('/').filter(Boolean);
-                            return parts.length > 0 ? `/${parts[parts.length - 1]}` : path;
-                          } catch (e) {
-                            return `Pagina ${i + 1}`;
-                          }
-                        })()}
-                      </span>
-                    </button>
-                  ))}
+                  {results.map((res, i) => {
+                    const pageScores = res.scores || {};
+                    const pageOverall = Math.round(
+                      (pageScores.performance ?? 0) * 0.45 +
+                      (pageScores.accessibility ?? 0) * 0.25 +
+                      (pageScores.seo ?? 0) * 0.30
+                    );
+                    const isActive = activeResultIndex === i;
+                    const dotColor = scoreColor(pageOverall);
+                    return (
+                      <button
+                        type="button"
+                        key={`tab-${i}-${res.url}`}
+                        onClick={() => setActiveResultIndex(i)}
+                        aria-current={isActive ? "page" : undefined}
+                        title={`${pageOverall}/100`}
+                        className={`flex items-center gap-2 px-3 md:px-4 py-2 rounded-lg text-xs font-semibold transition-all border ${isActive
+                          ? "bg-stone-900 text-white border-stone-900"
+                          : "bg-transparent text-stone-600 border-stone-200 hover:border-stone-400 hover:text-stone-900"
+                          }`}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className="inline-block h-2 w-2 rounded-full shrink-0"
+                          style={{ backgroundColor: dotColor, boxShadow: isActive ? "0 0 0 2px rgba(255,255,255,0.25)" : "none" }}
+                        />
+                        <span className="truncate max-w-[80px] md:max-w-[120px]">
+                          {(() => {
+                            try {
+                              const path = new URL(res.url).pathname;
+                              if (path === '/') return t('homePage');
+                              const parts = path.split('/').filter(Boolean);
+                              return parts.length > 0 ? `/${parts[parts.length - 1]}` : path;
+                            } catch (e) {
+                              return `Pagina ${i + 1}`;
+                            }
+                          })()}
+                        </span>
+                        <span
+                          className={`tabular-nums text-[10px] font-black px-1.5 py-0.5 rounded ${isActive ? "bg-white/15 text-white" : "bg-stone-100 text-stone-700"}`}
+                          style={!isActive ? { color: dotColor, backgroundColor: `${dotColor}14` } : undefined}
+                        >
+                          {pageOverall}
+                        </span>
+                      </button>
+                    );
+                  })}
                   {Array.from({ length: pendingResultsCount }).map((_, i) => (
                     <div
                       key={`tab-skeleton-${i}`}
@@ -1529,9 +1704,27 @@ export default function Home() {
 
                   {/* Mini scores row */}
                   <div>
-                    <p className="text-sm text-stone-600 mb-4 leading-relaxed max-w-2xl">
+                    <p className="text-sm text-stone-600 mb-3 leading-relaxed max-w-2xl">
                       {verdict.desc}
                     </p>
+                    {dominantFactor && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (dominantFactor.tab === "performance") setSelectedCategory(dominantFactor.key === "a11y" ? "accessibility" : dominantFactor.key === "seo" ? "seo" : "performance");
+                          setActiveTab(dominantFactor.tab);
+                        }}
+                        className="inline-flex items-center gap-2 mb-4 px-3 py-1.5 rounded-full border border-stone-900/15 bg-white/70 text-[11px] font-semibold text-stone-700 hover:border-stone-900 hover:bg-stone-900 hover:text-white transition-all group"
+                      >
+                        <AlertTriangle size={11} className="opacity-70" />
+                        <span>
+                          {language === "it" ? "Limitato da" : "Limited by"}{" "}
+                          <span className="font-black">{dominantFactor.label}</span>{" "}
+                          <span className="tabular-nums opacity-75">({Math.round(dominantFactor.value)}/100)</span>
+                        </span>
+                        <ChevronRight size={11} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    )}
                     <div className="grid grid-cols-5 gap-2 md:gap-3">
                       {[
                         { key: "perf", label: t('performance'), value: currentResult.scores.performance, onClick: () => setSelectedCategory("performance"), isAeo: false },
